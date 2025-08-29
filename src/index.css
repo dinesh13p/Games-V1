@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Custom Components */
+.game-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  transition: all 0.3s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px 0 rgba(31, 38, 135, 0.5);
+}
+
+.game-board {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.1);
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #764ba2, #667eea);
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  filter: brightness(1.1);
+}
+
+.btn-danger {
+  background: linear-gradient(45deg, #ff4757, #ff3838);
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+}
+
+.snake-cell {
+  transition: all 0.1s ease;
+}
+
+.tic-tac-toe-cell {
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+}
+
+.tic-tac-toe-cell:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.1);
+  transform: scale(0.95);
+  border-color: #3b82f6;
+}
+
+.tic-tac-toe-cell:disabled {
+  cursor: not-allowed;
+}
+
+.winning-cell {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #22c55e !important;
+  animation: winPulse 0.6s ease-in-out;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes winPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes gameOverShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.pulse-slow {
+  animation: pulse 2s infinite;
+}
+
+.game-over {
+  animation: gameOverShake 0.5s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .game-board {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .tic-tac-toe-cell {
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.5rem;
+  }
+  
+  .snake-cell {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tic-tac-toe-cell {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
+  
+  .snake-cell {
+    width: 10px;
+    height: 10px;
+  }
+}
