@@ -42,6 +42,7 @@ export default function FlappyBird() {
     const spawnTimerRef = useRef(0);
     const passedPipeIndexRef = useRef(0);
     const scoreRef = useRef(0);
+    const pipeCountRef = useRef(0);
 
     useEffect(() => {
         function handleResize() {
@@ -84,23 +85,35 @@ export default function FlappyBird() {
                 flap();
             }
         };
-        const onMouse = (e) => {
+
+        // Canvas-specific mouse and touch handlers
+        const onCanvasClick = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             flap();
         };
-        const onTouch = (e) => {
+
+        const onCanvasTouch = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             flap();
         };
 
         window.addEventListener("keydown", onKey);
-        window.addEventListener("mousedown", onMouse);
-        window.addEventListener("touchstart", onTouch, { passive: false });
+        
+        // Add event listeners only to the canvas
+        const canvas = canvasRef.current;
+        if (canvas) {
+            canvas.addEventListener("mousedown", onCanvasClick);
+            canvas.addEventListener("touchstart", onCanvasTouch, { passive: false });
+        }
 
         return () => {
             window.removeEventListener("keydown", onKey);
-            window.removeEventListener("mousedown", onMouse);
-            window.removeEventListener("touchstart", onTouch);
+            if (canvas) {
+                canvas.removeEventListener("mousedown", onCanvasClick);
+                canvas.removeEventListener("touchstart", onCanvasTouch);
+            }
         };
     }, [state]);
 
@@ -111,6 +124,7 @@ export default function FlappyBird() {
         scoreRef.current = 0;
         setScore(0);
         passedPipeIndexRef.current = 0;
+        pipeCountRef.current = 0;
         birdRef.current = {
             x: width * 0.28,
             y: height / 2,
@@ -126,6 +140,7 @@ export default function FlappyBird() {
         scoreRef.current = 0;
         setScore(0);
         passedPipeIndexRef.current = 0;
+        pipeCountRef.current = 0;
         birdRef.current = {
             x: width * 0.28,
             y: height / 2,
@@ -136,12 +151,42 @@ export default function FlappyBird() {
 
     const randRange = (min, max) => Math.random() * (max - min) + min;
 
+    function shouldGapMove(pipeNumber) {
+        if (pipeNumber <= 30) return false;
+        
+        const cycleStart = Math.floor((pipeNumber - 31) / 30) * 30 + 31;
+        const positionInCycle = pipeNumber - cycleStart;
+        
+        if (cycleStart <= 45) {
+            // Pattern: 1 moving, 2 stationary (31, 34, 37, 40, 43)
+            return positionInCycle % 3 === 0;
+        } else if (cycleStart <= 75) {
+            // Pattern: 2 moving, 3 stationary (46-47, 51-52, 56-57, 61-62, 66-67, 71-72)
+            const groupIndex = Math.floor(positionInCycle / 5);
+            const posInGroup = positionInCycle % 5;
+            return posInGroup < 2;
+        } else {
+            // Pattern: every even pipe moves (76, 78, 80, 82, ...)
+            return pipeNumber % 2 === 0;
+        }
+    }
+
     function createPipe() {
         const x = width + 40;
         const minY = PIPE_MIN_GAP_Y;
         const maxY = height - GROUND_HEIGHT - PIPE_GAP - 40;
         const gapY = randRange(minY, maxY);
-        return { x, gapY };
+        pipeCountRef.current += 1;
+        
+        return { 
+            x, 
+            gapY: gapY,
+            originalGapY: gapY,
+            pipeNumber: pipeCountRef.current,
+            movingGap: shouldGapMove(pipeCountRef.current),
+            gapDirection: 1,
+            gapSpeed: 80
+        };
     }
 
     function checkCollision(bird, pipes) {
@@ -379,6 +424,22 @@ export default function FlappyBird() {
 
                 for (let pipe of pipesRef.current) {
                     pipe.x -= PIPE_SPEED * dt;
+                    
+                    // Update moving gap position
+                    if (pipe.movingGap) {
+                        pipe.gapY += pipe.gapDirection * pipe.gapSpeed * dt;
+                        
+                        const minY = PIPE_MIN_GAP_Y;
+                        const maxY = height - GROUND_HEIGHT - PIPE_GAP - 40;
+                        
+                        if (pipe.gapY <= minY) {
+                            pipe.gapY = minY;
+                            pipe.gapDirection = 1;
+                        } else if (pipe.gapY >= maxY) {
+                            pipe.gapY = maxY;
+                            pipe.gapDirection = -1;
+                        }
+                    }
                 }
 
                 if (pipesRef.current.length && pipesRef.current[0].x + PIPE_WIDTH < -20) {
@@ -445,7 +506,9 @@ export default function FlappyBird() {
         };
     }, [state, highScore, width, height]);
 
-    const resetScores = () => {
+    const resetScores = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         setHighScore(0);
         try {
             localStorage.removeItem('flappyBirdHighScore');
@@ -454,7 +517,9 @@ export default function FlappyBird() {
         }
     };
 
-    const handleBackToHome = () => {
+    const handleBackToHome = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         navigate('/');
     };
 

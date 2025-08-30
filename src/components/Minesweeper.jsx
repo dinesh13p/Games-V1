@@ -74,6 +74,7 @@ const DIFFICULTIES = {
 export default function Minesweeper() {
     const navigate = useNavigate();
     const [difficulty, setDifficulty] = useState("Beginner");
+    const [isMobile, setIsMobile] = useState(false);
     const cfg = DIFFICULTIES[difficulty];
 
     const [resetKey, setResetKey] = useState(0);
@@ -82,6 +83,16 @@ export default function Minesweeper() {
     const [won, setWon] = useState(false);
     const [flagMode, setFlagMode] = useState(false); // helpful on mobile
     const firstRevealRef = useRef(true);
+
+    // Check if mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // recreate board when difficulty or reset changes
     useEffect(() => {
@@ -192,6 +203,14 @@ export default function Minesweeper() {
         setResetKey((k) => k + 1);
     }
 
+    const handleDifficultyChange = (e) => {
+        const newDifficulty = e.target.value;
+        if (isMobile && (newDifficulty === "Intermediate" || newDifficulty === "Expert")) {
+            return; // Don't change difficulty on mobile for these levels
+        }
+        setDifficulty(newDifficulty);
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-center p-6">
             <div className="game-board p-8 rounded-2xl fade-in max-w-5xl w-full transform transition-all duration-500">
@@ -255,10 +274,17 @@ export default function Minesweeper() {
                             <select
                                 className="border rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none bg-white"
                                 value={difficulty}
-                                onChange={(e) => setDifficulty(e.target.value)}
+                                onChange={handleDifficultyChange}
                             >
                                 {Object.keys(DIFFICULTIES).map((k) => (
-                                    <option key={k} value={k}>{k}</option>
+                                    <option 
+                                        key={k} 
+                                        value={k}
+                                        disabled={isMobile && (k === "Intermediate" || k === "Expert")}
+                                    >
+                                        {k}
+                                        {isMobile && (k === "Intermediate" || k === "Expert") ? " (Desktop Only)" : ""}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -274,6 +300,16 @@ export default function Minesweeper() {
                             {flagMode ? "🚩 Flag Mode ON" : "🚩 Flag Mode"}
                         </button>
                     </div>
+
+                    {/* Mobile Difficulty Restriction Message */}
+                    {isMobile && (difficulty === "Intermediate" || difficulty === "Expert") && (
+                        <div className="mb-6 text-center bg-orange-50 p-4 rounded-xl border-2 border-orange-200">
+                            <h3 className="text-lg font-bold text-orange-600 mb-2">📱 Mobile Limitation</h3>
+                            <p className="text-sm text-gray-700">
+                                This difficulty level is optimized for larger screens. Please use a desktop or laptop for the best experience with Intermediate and Expert levels.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Game Board */}
                     <div

@@ -10,6 +10,7 @@ const SpaceInvaders = () => {
     const [score, setScore] = useState(0)
     const [level, setLevel] = useState(1)
     const [lives, setLives] = useState(3)
+    const [isMobile, setIsMobile] = useState(false)
     const [highScore, setHighScore] = useState(() => {
         try {
             const saved = localStorage.getItem('spaceInvadersHighScore')
@@ -38,6 +39,16 @@ const SpaceInvaders = () => {
         lastEnemyShot: 0,
         gameRunning: false
     })
+
+    // Check if mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Save high score whenever it changes
     useEffect(() => {
@@ -150,6 +161,8 @@ const SpaceInvaders = () => {
 
     // === Keyboard event handlers (prevent Space default on keydown & keyup) ===
     useEffect(() => {
+        if (isMobile) return; // Don't add keyboard listeners on mobile
+
         const handleKeyDown = (e) => {
             if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'Space', 'KeyR', 'Escape'].includes(e.code)) {
                 e.preventDefault()
@@ -214,11 +227,11 @@ const SpaceInvaders = () => {
             document.removeEventListener("keydown", handleKeyDown)
             document.removeEventListener("keyup", handleKeyUp)
         }
-    }, [gameStarted, gameOver, startGame, restartGame])
+    }, [gameStarted, gameOver, startGame, restartGame, isMobile])
 
     // === Main game loop ===
     useEffect(() => {
-        if (!gameStarted || gameOver) return
+        if (!gameStarted || gameOver || isMobile) return
 
         const canvas = canvasRef.current
         if (!canvas) return
@@ -476,7 +489,60 @@ const SpaceInvaders = () => {
             if (animationId) cancelAnimationFrame(animationId)
         }
         // Keep these deps so HUD reflects latest values without re-initializing the game.
-    }, [gameStarted, gameOver, score, level, lives, highScore])
+    }, [gameStarted, gameOver, score, level, lives, highScore, isMobile])
+
+    // Mobile restriction message
+    if (isMobile) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6">
+                <div className="p-8 rounded-2xl fade-in max-w-3xl w-full transform transition-all duration-500" style={{
+                    background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+                    border: "1px solid #e2e8f0"
+                }}>
+                    <div className="flex justify-between items-center mb-6">
+                        <button 
+                            className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
+                            onClick={handleBackToHome}
+                            aria-label="Back to Home"
+                        >
+                            ← Back to Home
+                        </button>
+                        <h1 className="text-3xl font-bold text-gray-800">👾 Space Invaders</h1>
+                        <div className="w-20"></div>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="mb-8 bg-blue-50 p-8 rounded-xl border-2 border-blue-200">
+                            <h2 className="text-2xl font-bold text-blue-600 mb-4">⌨️ Desktop Experience Required</h2>
+                            <p className="text-lg text-gray-700 mb-4">
+                                This game requires keyboard controls for precise movement and shooting.
+                            </p>
+                            <p className="text-gray-600">
+                                Please access this game on a desktop or laptop computer to enjoy the full Space Invaders experience with arrow key movement and spacebar shooting.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <style jsx>{`
+                    .fade-in {
+                        animation: fadeIn 0.5s ease-in;
+                    }
+                    .btn-secondary {
+                        background: linear-gradient(135deg, #6b7280, #4b5563);
+                        box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+                    }
+                    .btn-secondary:hover {
+                        background: linear-gradient(135deg, #4b5563, #374151);
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                `}</style>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-6">
@@ -529,7 +595,7 @@ const SpaceInvaders = () => {
                             won ? (
                                 <span className="text-green-600 animate-pulse-slow">🎉 Victory! You Won!</span>
                             ) : (
-                                <span className="text-red-500 animate-bounce-slow">💥 Game Over!</span>
+                                <span className="text-red-500 animate-bounce-slow">💀 You Lose!</span>
                             )
                         ) : gameStarted ? (
                             <span className="text-blue-600 animate-pulse">🚀 Battle in Progress...</span>
@@ -583,7 +649,7 @@ const SpaceInvaders = () => {
                     {gameOver && (
                         <div className="mt-6 text-center text-gray-600 bg-gray-50 p-6 rounded-xl">
                             <h3 className={`text-2xl font-bold mb-4 ${won ? 'text-green-600' : 'text-red-500'}`}>
-                                {won ? '🎉 Victory!' : '💀 Game Over!'}
+                                {won ? '🎉 Victory!' : '💀 You Lose!'}
                             </h3>
                             <p className="text-lg mb-2">
                                 Final Score: <strong>{score.toLocaleString()}</strong>

@@ -8,6 +8,7 @@ const PongGame = () => {
     const [gameStarted, setGameStarted] = useState(false)
     const [gameOver, setGameOver] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
 
     const gameStateRef = useRef({
         playerY: 0,
@@ -22,6 +23,16 @@ const PongGame = () => {
         upPressed: false,
         downPressed: false
     })
+
+    // Check if mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const initializeGame = useCallback(() => {
         const canvas = canvasRef.current
@@ -59,6 +70,8 @@ const PongGame = () => {
     }
 
     useEffect(() => {
+        if (isMobile) return; // Don't add keyboard listeners on mobile
+
         const handleKeyDown = (e) => {
             const state = gameStateRef.current
             if (e.key === "ArrowUp") {
@@ -92,10 +105,10 @@ const PongGame = () => {
             document.removeEventListener("keydown", handleKeyDown)
             document.removeEventListener("keyup", handleKeyUp)
         }
-    }, [gameStarted, gameOver, isPaused])
+    }, [gameStarted, gameOver, isPaused, isMobile])
 
     useEffect(() => {
-        if (!gameStarted || gameOver || isPaused) return
+        if (!gameStarted || gameOver || isPaused || isMobile) return
 
         const canvas = canvasRef.current
         if (!canvas) return
@@ -211,7 +224,39 @@ const PongGame = () => {
                 cancelAnimationFrame(animationId)
             }
         }
-    }, [gameStarted, gameOver, isPaused, score, resetBall])
+    }, [gameStarted, gameOver, isPaused, score, resetBall, isMobile])
+
+    // Mobile restriction message
+    if (isMobile) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6">
+                <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full">
+                    <div className="flex justify-between items-center mb-6">
+                        <button 
+                            className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
+                            onClick={() => navigate('/')}
+                        >
+                            ← Back to Home
+                        </button>
+                        <h1 className="text-3xl font-bold text-gray-800">🏓Ping-Pong</h1>
+                        <div className="w-20"></div>
+                    </div>
+
+                    <div className="text-center">
+                        <div className="mb-8 bg-blue-50 p-8 rounded-xl border-2 border-blue-200">
+                            <h2 className="text-2xl font-bold text-blue-600 mb-4">⌨️ Desktop Experience Required</h2>
+                            <p className="text-lg text-gray-700 mb-4">
+                                This game requires keyboard controls for the best gaming experience.
+                            </p>
+                            <p className="text-gray-600">
+                                Please access this game on a desktop or laptop computer to enjoy the full Ping-Pong experience with arrow key controls.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-6">

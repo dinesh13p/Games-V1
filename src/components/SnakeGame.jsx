@@ -15,6 +15,7 @@ const SnakeGame = () => {
     const [isPaused, setIsPaused] = useState(false)
     const [speed, setSpeed] = useState(initialSpeed)
     const [cellSize, setCellSize] = useState(20)
+    const [isMobile, setIsMobile] = useState(false)
     const [highScore, setHighScore] = useState(() => {
         try {
             const saved = localStorage.getItem('snakeHighScore')
@@ -43,9 +44,16 @@ const SnakeGame = () => {
         const handleResize = () => {
             const winWidth = window.innerWidth
             let newSize = 20
-            if (winWidth < 480) newSize = 10
-            else if (winWidth < 768) newSize = 15
+            let mobile = false
+            if (winWidth < 480) {
+                newSize = 10
+                mobile = true
+            } else if (winWidth < 768) {
+                newSize = 15
+                mobile = true
+            }
             setCellSize(newSize)
+            setIsMobile(mobile)
         }
         handleResize()
         window.addEventListener('resize', handleResize)
@@ -207,6 +215,18 @@ const SnakeGame = () => {
         setSpeed(initialSpeed)
     }
 
+    const handleDirectionChange = (newDirection) => {
+        if (!gameStarted || gameOver || isPaused) return
+        
+        const [newDirX, newDirY] = newDirection
+        const [currentDirX, currentDirY] = direction
+        
+        // Prevent reversing into itself
+        if (newDirX === -currentDirX && newDirY === -currentDirY) return
+        
+        setDirection(newDirection)
+    }
+
     return (
         <div className="min-h-screen flex items-center justify-center p-6">
             <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full transform transition-all duration-500">
@@ -261,6 +281,48 @@ const SnakeGame = () => {
                             })
                         )}
                     </div>
+
+                    {/* Mobile Controls */}
+                    {isMobile && (
+                        <div className="mb-6">
+                            <div className="flex flex-col items-center gap-2">
+                                <button 
+                                    className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
+                                    onClick={() => handleDirectionChange([-1, 0])}
+                                    disabled={!gameStarted || gameOver || isPaused}
+                                    aria-label="Move up"
+                                >
+                                    ↑
+                                </button>
+                                <div className="flex gap-2">
+                                    <button 
+                                        className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
+                                        onClick={() => handleDirectionChange([0, -1])}
+                                        disabled={!gameStarted || gameOver || isPaused}
+                                        aria-label="Move left"
+                                    >
+                                        ←
+                                    </button>
+                                    <button 
+                                        className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
+                                        onClick={() => handleDirectionChange([0, 1])}
+                                        disabled={!gameStarted || gameOver || isPaused}
+                                        aria-label="Move right"
+                                    >
+                                        →
+                                    </button>
+                                </div>
+                                <button 
+                                    className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
+                                    onClick={() => handleDirectionChange([1, 0])}
+                                    disabled={!gameStarted || gameOver || isPaused}
+                                    aria-label="Move down"
+                                >
+                                    ↓
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Game Controls */}
                     <div className="flex flex-wrap gap-4 mb-6 justify-center">
@@ -320,7 +382,7 @@ const SnakeGame = () => {
                     {/* Instructions */}
                     <div className="text-center text-gray-600 text-sm max-w-md">
                         <div className="bg-gray-50 p-4 rounded-xl">
-                            <p className="mb-1">🎯 <strong>Controls:</strong> Use arrow keys to move • Spacebar to pause</p>
+                            <p className="mb-1">🎯 <strong>Controls:</strong> {isMobile ? 'Use direction buttons below • ' : 'Use arrow keys to move • '}Spacebar to pause</p>
                             <p className="mb-2">🍎 Eat red food to grow and increase your score!</p>
                             <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
                                 <div className="bg-green-100 p-2 rounded">
