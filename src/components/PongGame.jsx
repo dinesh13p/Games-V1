@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 const PongGame = () => {
     const navigate = useNavigate()
     const canvasRef = useRef(null)
+    const [canvasSize, setCanvasSize] = useState({ width: 600, height: 400 })
     const [score, setScore] = useState({ player: 0, ai: 0 })
     const [gameStarted, setGameStarted] = useState(false)
     const [gameOver, setGameOver] = useState(false)
@@ -24,38 +25,93 @@ const PongGame = () => {
         downPressed: false
     })
 
-    // Check if mobile on mount and resize
+    // Check if mobile on mount and resize, and set canvas size responsively
     useEffect(() => {
-        const checkMobile = () => {
+        const updateResponsive = () => {
             setIsMobile(window.innerWidth < 768);
+            // Responsive canvas: max 600x400, min 300x200
+            const maxW = 600, maxH = 400, minW = 300, minH = 200;
+            let width = Math.min(maxW, Math.max(minW, Math.floor(window.innerWidth * 0.95)));
+            let height = Math.round(width * 2 / 3);
+            if (height > maxH) { height = maxH; width = Math.round(height * 3 / 2); }
+            setCanvasSize({ width, height });
         };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        updateResponsive();
+        window.addEventListener('resize', updateResponsive);
+        return () => window.removeEventListener('resize', updateResponsive);
     }, []);
+
+    // Mobile paddle movement: allow finger drag to move green paddle (responsive)
+    useEffect(() => {
+        if (!isMobile) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        let dragging = false;
+        let offsetY = 0;
+
+        const getTouchY = (touch) => {
+            const rect = canvas.getBoundingClientRect();
+            return ((touch.clientY - rect.top) / rect.height) * canvasSize.height;
+        };
+
+        const handleTouchStart = (e) => {
+            if (e.touches.length !== 1) return;
+            const y = getTouchY(e.touches[0]);
+            const state = gameStateRef.current;
+            if (
+                y >= state.playerY &&
+                y <= state.playerY + state.paddleHeight
+            ) {
+                dragging = true;
+                offsetY = y - state.playerY;
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (!dragging || e.touches.length !== 1) return;
+            const y = getTouchY(e.touches[0]);
+            const state = gameStateRef.current;
+            let newY = y - offsetY;
+            newY = Math.max(0, Math.min(canvasSize.height - state.paddleHeight, newY));
+            state.playerY = newY;
+        };
+
+        const handleTouchEnd = () => {
+            dragging = false;
+        };
+
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        return () => {
+            canvas.removeEventListener('touchstart', handleTouchStart);
+            canvas.removeEventListener('touchmove', handleTouchMove);
+            canvas.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [isMobile, canvasSize]);
 
     const initializeGame = useCallback(() => {
         const canvas = canvasRef.current
         if (!canvas) return
 
         const state = gameStateRef.current
-        state.playerY = canvas.height / 2 - state.paddleHeight / 2
-        state.aiY = canvas.height / 2 - state.paddleHeight / 2
-        state.ballX = canvas.width / 2
-        state.ballY = canvas.height / 2
+        state.playerY = canvasSize.height / 2 - state.paddleHeight / 2
+        state.aiY = canvasSize.height / 2 - state.paddleHeight / 2
+        state.ballX = canvasSize.width / 2
+        state.ballY = canvasSize.height / 2
         state.ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1)
         state.ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1)
-    }, [])
+    }, [canvasSize])
 
     const resetBall = useCallback(() => {
-        const canvas = canvasRef.current
         const state = gameStateRef.current
-        
-        state.ballX = canvas.width / 2
-        state.ballY = canvas.height / 2
+        state.ballX = canvasSize.width / 2
+        state.ballY = canvasSize.height / 2
         state.ballSpeedX = 5 * (Math.random() > 0.5 ? 1 : -1)
         state.ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1)
-    }, [])
+    }, [canvasSize])
 
     const startGame = () => {
         setGameStarted(true)
@@ -108,42 +164,47 @@ const PongGame = () => {
     }, [gameStarted, gameOver, isPaused, isMobile])
 
     useEffect(() => {
-        if (!gameStarted || gameOver || isPaused || isMobile) return
+        if (!gameStarted || gameOver || isPaused) return;
 
-        const canvas = canvasRef.current
-        if (!canvas) return
-        
-        const ctx = canvas.getContext("2d")
-        let animationId
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const width = canvasSize.width;
+        const height = canvasSize.height;
+        const ctx = canvas.getContext("2d");
+        let animationId = null;
+        let running = true;
 
         const gameLoop = () => {
-            const state = gameStateRef.current
+            if (!running) return;
+            const state = gameStateRef.current;
 
-            // Move player paddle
-            if (state.upPressed && state.playerY > 0) {
-                state.playerY -= 6
-            }
-            if (state.downPressed && state.playerY < canvas.height - state.paddleHeight) {
-                state.playerY += 6
+            // Move player paddle (keyboard)
+            if (!isMobile) {
+                if (state.upPressed && state.playerY > 0) {
+                    state.playerY -= 6;
+                }
+                if (state.downPressed && state.playerY < height - state.paddleHeight) {
+                    state.playerY += 6;
+                }
             }
 
             // Move AI paddle (simple AI)
-            const aiCenter = state.aiY + state.paddleHeight / 2
-            const ballCenter = state.ballY + state.ballSize / 2
-            
-            if (aiCenter < ballCenter && state.aiY < canvas.height - state.paddleHeight) {
-                state.aiY += 4
+            const aiCenter = state.aiY + state.paddleHeight / 2;
+            const ballCenter = state.ballY + state.ballSize / 2;
+            const aiSpeed = isMobile ? 8 : 4;
+            if (aiCenter < ballCenter && state.aiY < height - state.paddleHeight) {
+                state.aiY += aiSpeed;
             } else if (aiCenter > ballCenter && state.aiY > 0) {
-                state.aiY -= 4
+                state.aiY -= aiSpeed;
             }
 
             // Move ball
-            state.ballX += state.ballSpeedX
-            state.ballY += state.ballSpeedY
+            state.ballX += state.ballSpeedX;
+            state.ballY += state.ballSpeedY;
 
             // Collision with top/bottom walls
-            if (state.ballY <= 0 || state.ballY + state.ballSize >= canvas.height) {
-                state.ballSpeedY = -state.ballSpeedY
+            if (state.ballY <= 0 || state.ballY + state.ballSize >= height) {
+                state.ballSpeedY = -state.ballSpeedY;
             }
 
             // Collision with player paddle
@@ -152,111 +213,79 @@ const PongGame = () => {
                 state.ballY + state.ballSize >= state.playerY &&
                 state.ballY <= state.playerY + state.paddleHeight
             ) {
-                state.ballSpeedX = Math.abs(state.ballSpeedX)
-                // Add some randomness to ball direction
-                state.ballSpeedY += (Math.random() - 0.5) * 2
+                state.ballSpeedX = Math.abs(state.ballSpeedX);
+                state.ballSpeedY += (Math.random() - 0.5) * 2;
             }
 
             // Collision with AI paddle
             if (
-                state.ballX + state.ballSize >= canvas.width - 20 &&
+                state.ballX + state.ballSize >= width - 20 &&
                 state.ballY + state.ballSize >= state.aiY &&
                 state.ballY <= state.aiY + state.paddleHeight
             ) {
-                state.ballSpeedX = -Math.abs(state.ballSpeedX)
-                state.ballSpeedY += (Math.random() - 0.5) * 2
+                state.ballSpeedX = -Math.abs(state.ballSpeedX);
+                state.ballSpeedY += (Math.random() - 0.5) * 2;
             }
 
             // Score update and ball reset
             if (state.ballX < 0) {
-                setScore(prev => ({ ...prev, ai: prev.ai + 1 }))
-                resetBall()
-            } else if (state.ballX > canvas.width) {
-                setScore(prev => ({ ...prev, player: prev.player + 1 }))
-                resetBall()
+                setScore(prev => ({ ...prev, ai: prev.ai + 1 }));
+                resetBall();
+            } else if (state.ballX > width) {
+                setScore(prev => ({ ...prev, player: prev.player + 1 }));
+                resetBall();
             }
 
             // Check for game over (first to 10 points)
             if (score.player >= 10 || score.ai >= 10) {
-                setGameOver(true)
-                return
+                setGameOver(true);
+                running = false;
+                return;
             }
 
             // Clear canvas with dark background
-            ctx.fillStyle = "#001122"
-            ctx.fillRect(0, 0, canvas.width, canvas.height)
+            ctx.fillStyle = "#001122";
+            ctx.fillRect(0, 0, width, height);
 
             // Draw middle dashed line
-            ctx.strokeStyle = "#444"
-            ctx.setLineDash([5, 5])
-            ctx.beginPath()
-            ctx.moveTo(canvas.width / 2, 0)
-            ctx.lineTo(canvas.width / 2, canvas.height)
-            ctx.stroke()
-            ctx.setLineDash([])
+            ctx.strokeStyle = "#444";
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(width / 2, 0);
+            ctx.lineTo(width / 2, height);
+            ctx.stroke();
+            ctx.setLineDash([]);
 
             // Draw paddles
-            ctx.fillStyle = "#00ff00"
-            ctx.fillRect(10, state.playerY, state.paddleWidth, state.paddleHeight)
-            
-            ctx.fillStyle = "#ff0000"
-            ctx.fillRect(canvas.width - 20, state.aiY, state.paddleWidth, state.paddleHeight)
+            ctx.fillStyle = "#00ff00";
+            ctx.fillRect(10, state.playerY, state.paddleWidth, state.paddleHeight);
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(width - 20, state.aiY, state.paddleWidth, state.paddleHeight);
 
             // Draw ball
-            ctx.fillStyle = "#ffffff"
-            ctx.fillRect(state.ballX, state.ballY, state.ballSize, state.ballSize)
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(state.ballX, state.ballY, state.ballSize, state.ballSize);
 
             // Draw score
-            ctx.fillStyle = "#ffffff"
-            ctx.font = "bold 24px Arial"
-            ctx.fillText(score.player.toString(), canvas.width / 4 - 10, 40)
-            ctx.fillText(score.ai.toString(), (3 * canvas.width) / 4 - 10, 40)
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 24px Arial";
+            ctx.fillText(score.player.toString(), width / 4 - 10, 40);
+            ctx.fillText(score.ai.toString(), (3 * width) / 4 - 10, 40);
 
-            if (!gameOver) {
-                animationId = requestAnimationFrame(gameLoop)
-            }
-        }
+            animationId = requestAnimationFrame(gameLoop);
+        };
 
-        animationId = requestAnimationFrame(gameLoop)
+        animationId = requestAnimationFrame(gameLoop);
 
         return () => {
+            running = false;
             if (animationId) {
-                cancelAnimationFrame(animationId)
+                cancelAnimationFrame(animationId);
             }
-        }
-    }, [gameStarted, gameOver, isPaused, score, resetBall, isMobile])
+        };
+    }, [gameStarted, gameOver, isPaused, score, resetBall, isMobile, canvasSize]);
 
-    // Mobile restriction message
-    if (isMobile) {
-        return (
-            <div className="min-h-screen flex items-center justify-center p-6">
-                <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full">
-                    <div className="flex justify-between items-center mb-6">
-                        <button 
-                            className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                            onClick={() => navigate('/')}
-                        >
-                            ← Back to Home
-                        </button>
-                        <h1 className="text-3xl font-bold text-gray-800">🏓Ping-Pong</h1>
-                        <div className="w-20"></div>
-                    </div>
-
-                    <div className="text-center">
-                        <div className="mb-8 bg-blue-50 p-8 rounded-xl border-2 border-blue-200">
-                            <h2 className="text-2xl font-bold text-blue-600 mb-4">⌨️ Desktop Experience Required</h2>
-                            <p className="text-lg text-gray-700 mb-4">
-                                This game requires keyboard controls for the best gaming experience.
-                            </p>
-                            <p className="text-gray-600">
-                                Please access this game on a desktop or laptop computer to enjoy the full Ping-Pong experience with arrow key controls.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+    // ...existing code...
 
     return (
         <div className="min-h-screen flex items-center justify-center p-6">
@@ -280,9 +309,10 @@ const PongGame = () => {
                 <div className="flex flex-col items-center">
                     <canvas
                         ref={canvasRef}
-                        width={600}
-                        height={400}
+                        width={canvasSize.width}
+                        height={canvasSize.height}
                         className="border-4 border-gray-300 rounded-lg mb-6 bg-gray-900"
+                        style={{ maxWidth: '100%', height: 'auto', width: '100%' }}
                     />
 
                     {/* Game Controls */}

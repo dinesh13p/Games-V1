@@ -9,6 +9,7 @@ const SnakeGame = () => {
     const [snake, setSnake] = useState([[10, 10]])
     const [food, setFood] = useState([5, 5])
     const [direction, setDirection] = useState([0, 1])
+    const directionChangedRef = useRef(false)
     const [gameOver, setGameOver] = useState(false)
     const [score, setScore] = useState(0)
     const [gameStarted, setGameStarted] = useState(false)
@@ -52,6 +53,13 @@ const SnakeGame = () => {
                 newSize = 15
                 mobile = true
             }
+            // On mobile, make the board fill the width and set cell size accordingly
+            if (mobile) {
+                // Leave some margin (e.g., 16px on each side)
+                const margin = 32
+                const boardWidth = winWidth - margin > 0 ? winWidth - margin : winWidth
+                newSize = Math.floor(boardWidth / boardSize)
+            }
             setCellSize(newSize)
             setIsMobile(mobile)
         }
@@ -68,21 +76,20 @@ const SnakeGame = () => {
                 setIsPaused(false)
                 return
             }
-            
             if (!gameStarted || gameOver) return
-            
+            if (directionChangedRef.current) return
             switch (e.key) {
                 case "ArrowUp":
-                    if (direction[0] !== 1) setDirection([-1, 0])
+                    if (direction[0] !== 1) { setDirection([-1, 0]); directionChangedRef.current = true; }
                     break
                 case "ArrowDown":
-                    if (direction[0] !== -1) setDirection([1, 0])
+                    if (direction[0] !== -1) { setDirection([1, 0]); directionChangedRef.current = true; }
                     break
                 case "ArrowLeft":
-                    if (direction[1] !== 1) setDirection([0, -1])
+                    if (direction[1] !== 1) { setDirection([0, -1]); directionChangedRef.current = true; }
                     break
                 case "ArrowRight":
-                    if (direction[1] !== -1) setDirection([0, 1])
+                    if (direction[1] !== -1) { setDirection([0, 1]); directionChangedRef.current = true; }
                     break
                 case " ":
                     e.preventDefault()
@@ -92,7 +99,6 @@ const SnakeGame = () => {
                     break
             }
         }
-        
         window.addEventListener("keydown", handleKey)
         return () => window.removeEventListener("keydown", handleKey)
     }, [direction, gameStarted, isPaused, gameOver])
@@ -210,21 +216,25 @@ const SnakeGame = () => {
         setDirection([0, 1])
         setGameOver(false)
         setScore(0)
-        setGameStarted(false)
+        setGameStarted(true)
         setIsPaused(false)
         setSpeed(initialSpeed)
     }
 
+    // Allow only one direction change per tick, for both keyboard and button controls
+    useEffect(() => {
+        directionChangedRef.current = false
+    }, [snake])
+
     const handleDirectionChange = (newDirection) => {
         if (!gameStarted || gameOver || isPaused) return
-        
+        if (directionChangedRef.current) return
         const [newDirX, newDirY] = newDirection
         const [currentDirX, currentDirY] = direction
-        
         // Prevent reversing into itself
         if (newDirX === -currentDirX && newDirY === -currentDirY) return
-        
         setDirection(newDirection)
+        directionChangedRef.current = true
     }
 
     return (
@@ -254,6 +264,10 @@ const SnakeGame = () => {
                         style={{
                             gridTemplateRows: `repeat(${boardSize}, ${cellSize}px)`,
                             gridTemplateColumns: `repeat(${boardSize}, ${cellSize}px)`,
+                            width: isMobile ? `${cellSize * boardSize}px` : undefined,
+                            height: isMobile ? `${cellSize * boardSize}px` : undefined,
+                            maxWidth: '100vw',
+                            maxHeight: '100vw',
                         }}
                         role="presentation"
                         aria-label="Snake game board"
@@ -286,37 +300,33 @@ const SnakeGame = () => {
                     {isMobile && (
                         <div className="mb-6">
                             <div className="flex flex-col items-center gap-2">
-                                <button 
+                                <button
                                     className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
                                     onClick={() => handleDirectionChange([-1, 0])}
                                     disabled={!gameStarted || gameOver || isPaused}
-                                    aria-label="Move up"
                                 >
                                     ↑
                                 </button>
                                 <div className="flex gap-2">
-                                    <button 
+                                    <button
                                         className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
                                         onClick={() => handleDirectionChange([0, -1])}
                                         disabled={!gameStarted || gameOver || isPaused}
-                                        aria-label="Move left"
                                     >
                                         ←
                                     </button>
-                                    <button 
+                                    <button
                                         className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
                                         onClick={() => handleDirectionChange([0, 1])}
                                         disabled={!gameStarted || gameOver || isPaused}
-                                        aria-label="Move right"
                                     >
                                         →
                                     </button>
                                 </div>
-                                <button 
+                                <button
                                     className="btn-secondary text-white px-4 py-2 rounded-lg font-bold text-2xl transform transition-all duration-200 hover:scale-105"
                                     onClick={() => handleDirectionChange([1, 0])}
                                     disabled={!gameStarted || gameOver || isPaused}
-                                    aria-label="Move down"
                                 >
                                     ↓
                                 </button>
@@ -327,7 +337,7 @@ const SnakeGame = () => {
                     {/* Game Controls */}
                     <div className="flex flex-wrap gap-4 mb-6 justify-center">
                         {!gameStarted ? (
-                            <button 
+                            <button
                                 className="btn-primary text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
                                 onClick={startGame}
                                 aria-label="Start the game"
@@ -335,7 +345,7 @@ const SnakeGame = () => {
                                 🎮 Start Game
                             </button>
                         ) : (
-                            <button 
+                            <button
                                 className="btn-secondary text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
                                 onClick={pauseGame}
                                 disabled={gameOver}
@@ -344,14 +354,15 @@ const SnakeGame = () => {
                                 {isPaused ? "▶️ Resume" : "⏸️ Pause"}
                             </button>
                         )}
-                        
-                        <button 
-                            className="btn-danger text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
-                            onClick={restartGame}
-                            aria-label="Restart the game"
-                        >
-                            🔄 Restart
-                        </button>
+                        {gameOver && (
+                            <button
+                                className="btn-danger text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
+                                onClick={restartGame}
+                                aria-label="Restart the game"
+                            >
+                                🔄 Restart
+                            </button>
+                        )}
                     </div>
 
                     {/* Game Status */}

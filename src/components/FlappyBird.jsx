@@ -152,23 +152,46 @@ export default function FlappyBird() {
     const randRange = (min, max) => Math.random() * (max - min) + min;
 
     function shouldGapMove(pipeNumber) {
-        if (pipeNumber <= 30) return false;
-        
-        const cycleStart = Math.floor((pipeNumber - 31) / 30) * 30 + 31;
-        const positionInCycle = pipeNumber - cycleStart;
-        
-        if (cycleStart <= 45) {
-            // Pattern: 1 moving, 2 stationary (31, 34, 37, 40, 43)
-            return positionInCycle % 3 === 0;
-        } else if (cycleStart <= 75) {
-            // Pattern: 2 moving, 3 stationary (46-47, 51-52, 56-57, 61-62, 66-67, 71-72)
-            const groupIndex = Math.floor(positionInCycle / 5);
-            const posInGroup = positionInCycle % 5;
-            return posInGroup < 2;
-        } else {
-            // Pattern: every even pipe moves (76, 78, 80, 82, ...)
-            return pipeNumber % 2 === 0;
+        // Cycles: 25-45, 46-75, 76-100, 101-125, 126-145, 146-175, 176-200, ...
+        // 1. 1-24: stationary
+        if (pipeNumber <= 24) return false;
+
+        // Find cycle base (0, 100, 200, ...)
+        const cycleBase = Math.floor((pipeNumber - 1) / 100) * 100;
+        const n = pipeNumber - cycleBase;
+
+        // 25-45: custom pattern
+        if (n >= 25 && n <= 45) {
+            // Gaps in poles 28, 31, 34, 37, 40, 43 move, others stationary
+            return [28, 31, 34, 37, 40, 43].includes(n);
         }
+        // 46-75: even moves, odd stationary
+        if (n >= 46 && n <= 75) {
+            return n % 2 === 0;
+        }
+        // 76-100: all move
+        if (n >= 76 && n <= 100) {
+            return true;
+        }
+        // 101-124: stationary
+        if (n >= 101 && n <= 124) {
+            return false;
+        }
+        // 125-145: custom pattern
+        if (n >= 125 && n <= 145) {
+            return [128, 131, 134, 137, 140, 143].includes(n);
+        }
+        // 146-175: even moves, odd stationary
+        if (n >= 146 && n <= 175) {
+            return n % 2 === 0;
+        }
+        // 176-200: all move
+        if (n >= 176 && n <= 200) {
+            return true;
+        }
+        // For n > 200, repeat pattern
+        // (function will be called again as cycleBase increases)
+        return false;
     }
 
     function createPipe() {

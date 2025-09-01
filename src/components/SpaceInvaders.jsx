@@ -62,27 +62,37 @@ const SpaceInvaders = () => {
     // === Create 120 enemies (10x12) and fit inside 600x600 ===
     const createEnemies = useCallback(() => {
     const enemies = []
-    const rows = 10
-    const cols = 10
-        const startX = 40
-        const startY = 60
-        const stepX = 45
-        const stepY = 35
+    const totalRows = 11; // 7 + 4
+    const startX = 40;
+    const startY = 60;
+    const stepX = 45;
+    const stepY = 35;
 
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                enemies.push({
-                    x: startX + c * stepX,
-                    y: startY + r * stepY,
-                    width: 30,
-                    height: 20,
-                    alive: true,
-                    type: r < 2 ? 'small' : 'large',
-                    points: r < 2 ? 10 : 20
-                })
-            }
+    for (let r = 0; r < totalRows; r++) {
+        let cols, offsetX;
+        if (r >= totalRows - 4) {
+            // Bottom 4 rows: 8 enemies
+            cols = 8;
+            // Center 8 enemies in 600px width
+            offsetX = (600 - (cols - 1) * stepX - 30) / 2;
+        } else {
+            // Top 7 rows: 10 enemies
+            cols = 10;
+            offsetX = (600 - (cols - 1) * stepX - 30) / 2;
         }
-        return enemies
+        for (let c = 0; c < cols; c++) {
+            enemies.push({
+                x: offsetX + c * stepX,
+                y: startY + r * stepY,
+                width: 30,
+                height: 20,
+                alive: true,
+                type: r < 2 ? 'small' : 'large',
+                points: r < 2 ? 10 : 20
+            });
+        }
+    }
+    return enemies;
     }, [])
 
     const initializeGame = useCallback(() => {
@@ -278,7 +288,7 @@ const SpaceInvaders = () => {
             })
 
             // Enemy shooting
-            const shootingInterval = Math.max(800 - level * 50, 300)
+            const shootingInterval = Math.max((800 - level * 50) * (1/1.2), 300 * (1/1.2))
             if (time - state.lastEnemyShot > shootingInterval) {
                 const aliveEnemiesShooters = state.enemies.filter(e => e.alive)
                 if (aliveEnemiesShooters.length > 0) {

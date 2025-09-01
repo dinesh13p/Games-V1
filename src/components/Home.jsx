@@ -27,11 +27,11 @@ const Home = () => {
             path: '/flappybird'
         },
         {
-            id: 'minesweeper',
-            title: 'Minesweeper',
-            emoji: '💣',
-            description: 'Uncover all safe tiles without detonating a mine!',
-            path: '/minesweeper'
+            id: 'frogger',
+            title: 'Frogger',
+            emoji: '🐸',
+            description: 'Help the frog cross the road and river safely!',
+            path: '/frogger'
         },
         {
             id: 'pong',
@@ -41,11 +41,32 @@ const Home = () => {
             path: '/pong'
         },
         {
+            id: 'minesweeper',
+            title: 'Minesweeper',
+            emoji: '💣',
+            description: 'Uncover all safe tiles without detonating a mine!',
+            path: '/minesweeper'
+        },
+        {
             id: 'spaceinvaders',
             title: 'Space Invaders',
             emoji: '👾',
             description: 'Defend Earth from alien invasion. Shoot to survive!',
             path: '/spaceinvaders'
+        },
+        {
+            id: 'doodlejump',
+            title: 'Doodle Jump',
+            emoji: '📏',
+            description: 'Jump from platform to platform and avoid falling!',
+            path: '/doodlejump'
+        },
+        {
+            id: 'archery',
+            title: 'Archery Game',
+            emoji: '🏹',
+            description: 'Aim and shoot arrows at targets to score points!',
+            path: '/archery'
         }
     ]
 
