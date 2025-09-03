@@ -205,7 +205,7 @@ const FroggerGame = () => {
         const state = gameState.current
 
         // Determine dark mode
-        const darkMode = completions > 0 && completions % 3 === 0
+    const darkMode = completions > 0 && completions % 2 === 0
 
         // Clear canvas
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -256,17 +256,20 @@ const FroggerGame = () => {
             ctx.fillStyle = darkMode ? '#4b2e0e' : '#8B4513'
         })
 
-        // Draw cars
-        ctx.fillStyle = darkMode ? '#b91c1c' : '#FF0000'
+        // Draw cars (buses are every car in road rows, color purple on second lap)
         state.cars.forEach(car => {
             const x = car.x * GRID_SIZE
             const y = car.y * GRID_SIZE
+            // Identify buses: all cars in road rows (y 3-5, 7-9)
+            let isBus = (car.y >= 3 && car.y <= 5) || (car.y >= 7 && car.y <= 9)
+            // Second lap: completions % 2 === 0 and completions > 0 and not darkMode
+            let usePurple = isBus && completions > 0 && completions % 2 === 0 && !darkMode
+            ctx.fillStyle = usePurple ? '#A020F0' : (darkMode ? '#b91c1c' : '#FF0000')
             ctx.fillRect(x, y + 10, GRID_SIZE, GRID_SIZE - 20)
             // Add car details
-            ctx.fillStyle = darkMode ? '#222' : '#000'
+            ctx.fillStyle = usePurple ? '#222' : (darkMode ? '#222' : '#000')
             ctx.fillRect(x + 10, y + 15, 10, 10)
             ctx.fillRect(x + 30, y + 15, 10, 10)
-            ctx.fillStyle = darkMode ? '#b91c1c' : '#FF0000'
         })
 
         // Draw frog

@@ -288,7 +288,7 @@ const SpaceInvaders = () => {
             })
 
             // Enemy shooting
-            const shootingInterval = Math.max((800 - level * 50) * (1/1.2), 300 * (1/1.2))
+            const shootingInterval = Math.max((800 - level * 50) * (1/1.2) / 1.5, 300 * (1/1.2) / 1.5)
             if (time - state.lastEnemyShot > shootingInterval) {
                 const aliveEnemiesShooters = state.enemies.filter(e => e.alive)
                 if (aliveEnemiesShooters.length > 0) {
