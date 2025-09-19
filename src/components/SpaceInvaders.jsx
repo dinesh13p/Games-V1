@@ -509,16 +509,8 @@ const SpaceInvaders = () => {
                     background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
                     border: "1px solid #e2e8f0"
                 }}>
-                    <div className="flex justify-between items-center mb-6">
-                        <button 
-                            className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                            onClick={handleBackToHome}
-                            aria-label="Back to Home"
-                        >
-                            ← Back to Home
-                        </button>
+                    <div className="flex justify-center items-center mb-6">
                         <h1 className="text-3xl font-bold text-gray-800">👾 Space Invaders</h1>
-                        <div className="w-20"></div>
                     </div>
 
                     <div className="text-center">
@@ -537,13 +529,6 @@ const SpaceInvaders = () => {
                 <style jsx>{`
                     .fade-in {
                         animation: fadeIn 0.5s ease-in;
-                    }
-                    .btn-secondary {
-                        background: linear-gradient(135deg, #6b7280, #4b5563);
-                        box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
-                    }
-                    .btn-secondary:hover {
-                        background: linear-gradient(135deg, #4b5563, #374151);
                     }
                     @keyframes fadeIn {
                         from { opacity: 0; transform: translateY(20px); }

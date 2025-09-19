@@ -29,8 +29,8 @@ const PongGame = () => {
     useEffect(() => {
         const updateResponsive = () => {
             setIsMobile(window.innerWidth < 768);
-            // Responsive canvas: max 600x400, min 300x200
-            const maxW = 600, maxH = 400, minW = 300, minH = 200;
+            // Responsive canvas: max 600x400, min 380x260 (larger min for mobile)
+            const maxW = 600, maxH = 400, minW = 380, minH = 260;
             let width = Math.min(maxW, Math.max(minW, Math.floor(window.innerWidth * 0.95)));
             let height = Math.round(width * 2 / 3);
             if (height > maxH) { height = maxH; width = Math.round(height * 3 / 2); }
@@ -188,15 +188,15 @@ const PongGame = () => {
                 }
             }
 
-            // Move AI paddle (simple AI)
+            // Move AI paddle (smooth interpolation)
             const aiCenter = state.aiY + state.paddleHeight / 2;
             const ballCenter = state.ballY + state.ballSize / 2;
-            const aiSpeed = isMobile ? 8 : 4;
-            if (aiCenter < ballCenter && state.aiY < height - state.paddleHeight) {
-                state.aiY += aiSpeed;
-            } else if (aiCenter > ballCenter && state.aiY > 0) {
-                state.aiY -= aiSpeed;
-            }
+            // Use interpolation for smoother AI movement
+            const aiTargetY = ballCenter - state.paddleHeight / 2;
+            const aiLerp = isMobile ? 0.25 : 0.15; // Faster on mobile, smoother on desktop
+            state.aiY += (aiTargetY - state.aiY) * aiLerp;
+            // Clamp AI paddle position
+            state.aiY = Math.max(0, Math.min(height - state.paddleHeight, state.aiY));
 
             // Move ball
             state.ballX += state.ballSpeedX;

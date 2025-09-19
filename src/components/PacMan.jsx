@@ -595,16 +595,8 @@ export default function PacMan() {
         return (
             <div className="min-h-screen flex items-center justify-center p-6">
                 <div className="game-board p-8 rounded-2xl fade-in max-w-4xl w-full transform transition-all duration-500">
-                    <div className="flex justify-between items-center mb-6">
-                        <button 
-                            className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                            onClick={handleBackToHome}
-                            aria-label="Back to Home"
-                        >
-                            ← Back to Home
-                        </button>
+                    <div className="flex justify-center items-center mb-6">
                         <h1 className="text-3xl font-bold text-gray-800">🥠 Pac-Man</h1>
-                        <div className="w-20"></div>
                     </div>
 
                     <div className="text-center">

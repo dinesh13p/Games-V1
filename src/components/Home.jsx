@@ -10,10 +10,10 @@ const Home = () => {
 		{ id: 'flappybird', title: 'Flappy Bird', emoji: '🐦', description: 'Navigate through pipes by tapping to flap your wings!', path: '/flappybird', category: 'Arcade', difficulty: 'Medium', isNew: false, isFeatured: false },
 		{ id: 'frogger', title: 'Frogger', emoji: '🐸', description: 'Help the frog cross the road and river safely!', path: '/frogger', category: 'Classic', difficulty: 'Medium', isNew: false, isFeatured: false },
 		{ id: 'pong', title: 'Ping-Pong Game', emoji: '🏓', description: 'Classic arcade game. Beat the AI with your paddle skills!', path: '/pong', category: 'Sports', difficulty: 'Medium', isNew: false, isFeatured: false },
-		{ id: 'doodlejump', title: 'Doodle Jump', emoji: '🦘', description: 'Jump from platform to platform and avoid falling!', path: '/doodlejump', category: 'Platform', difficulty: 'Medium', isNew: false, isFeatured: false },
-		{ id: 'spaceinvaders', title: 'Space Invaders', emoji: '🚀', description: 'Defend Earth from alien invasion. Shoot to survive!', path: '/spaceinvaders', category: 'Action', difficulty: 'Medium', isNew: false, isFeatured: true },
-		{ id: 'pacman', title: 'Pac-Man', emoji: '👻', description: 'Navigate the maze, eat pellets, and avoid ghosts!', path: '/pacman', category: 'Arcade', difficulty: 'Medium', isNew: false, isFeatured: true },
+		{ id: 'doodlejump', title: 'Doodle Jump', emoji: '🦘', description: 'Jump from platform to platform and avoid falling!', path: '/doodlejump', category: 'Platform', difficulty: 'Hard', isNew: false, isFeatured: false },
 		{ id: 'minesweeper', title: 'Minesweeper', emoji: '💣', description: 'Uncover all safe tiles without detonating a mine!', path: '/minesweeper', category: 'Puzzle', difficulty: 'Hard', isNew: false, isFeatured: false },
+		{ id: 'spaceinvaders', title: 'Space Invaders', emoji: '🚀', description: 'Defend Earth from alien invasion. Shoot to survive! | DESKTOP ONLY GAME', path: '/spaceinvaders', category: 'Action', difficulty: 'Medium', isNew: false, isFeatured: true },
+		{ id: 'pacman', title: 'Pac-Man', emoji: '👻', description: 'Navigate the maze, eat pellets, and avoid ghosts! | DESKTOP ONLY GAME', path: '/pacman', category: 'Arcade', difficulty: 'Medium', isNew: false, isFeatured: true },
 	]
 
 	const categories = ['All', 'Classic', 'Arcade', 'Action', 'Puzzle', 'Strategy', 'Sports', 'Platform']
