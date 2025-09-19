@@ -548,7 +548,11 @@ const DoodleJump = () => {
     // Restart
     const restartGame = useCallback(() => {
         if (animationRef.current) cancelAnimationFrame(animationRef.current)
-        setTimeout(() => startGame(), 100)
+        setGameStarted(false)
+        setIsPaused(false)
+        setGameOver(false)
+        setScore(0)
+        setTimeout(() => startGame(), 0)
     }, [startGame])
 
     // Pause/Resume
@@ -698,24 +702,20 @@ const DoodleJump = () => {
     }, [])
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 flex items-center justify-center p-6">
-            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl shadow-2xl max-w-2xl w-full">
-                <div className="flex justify-between items-center mb-6">
-                    <button
-                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                        onClick={handleNavigateHome}
-                        aria-label="Back to Home"
-                    >
-                        ← Back to Home
-                    </button>
-                    <div className="text-center">
-                        <h1 className="text-3xl font-bold text-white">🦘 Doodle Jump</h1>
+        <div className="min-h-screen bg-gray-900 text-white">
+
+
+            <main className="flex items-center justify-center p-6">
+                <div className="bg-gray-800 border border-gray-700 p-8 rounded-2xl shadow-2xl max-w-2xl w-full">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="text-center">
+                            <h1 className="text-3xl font-bold text-white">🦘 Doodle Jump</h1>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-lg font-semibold text-white">Score: {score}</div>
+                            <div className="text-sm text-gray-300">High: {highScore}</div>
+                        </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-lg font-semibold text-white">Score: {score}</div>
-                        <div className="text-sm text-white/80">High: {highScore}</div>
-                    </div>
-                </div>
 
                 <div className="flex flex-col items-center">
                     {/* Canvas */}
@@ -775,14 +775,15 @@ const DoodleJump = () => {
                                 {isPaused ? '▶️ Resume' : '⏸️ Pause'}
                             </button>
                         )}
-
-                        <button
-                            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
-                            onClick={restartGame}
-                            aria-label="Restart the game"
-                        >
-                            🔄 Restart
-                        </button>
+                        {gameOver && (
+                            <button
+                                className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
+                                onClick={restartGame}
+                                aria-label="Restart the game"
+                            >
+                                🔄 Restart
+                            </button>
+                        )}
                     </div>
 
                     {/* Status Messages */}
@@ -823,7 +824,8 @@ const DoodleJump = () => {
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            </main>
         </div>
     )
 }

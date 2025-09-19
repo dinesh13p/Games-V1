@@ -288,23 +288,19 @@ const PongGame = () => {
     // ...existing code...
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6">
-            <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full">
-                <div className="flex justify-between items-center mb-6">
-                    <button 
-                        className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                        onClick={() => navigate('/')}
-                    >
-                        ← Back to Home
-                    </button>
-                    <h1 className="text-3xl font-bold text-gray-800">🏓Ping-Pong</h1>
-                    <div className="text-right">
-                        <div className="text-lg font-semibold text-gray-700">
-                            {score.player} - {score.ai}
+        <div className="min-h-screen bg-gray-900 text-white">
+
+            <main className="flex items-center justify-center p-6">
+                <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full bg-gray-800 border border-gray-700">
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-3xl font-bold text-black">🏓Ping-Pong</h1>
+                        <div className="text-right">
+                            <div className="text-lg font-semibold text-black">
+                                {score.player} - {score.ai}
+                            </div>
+                            <div className="text-xs text-black">First to 10 wins</div>
                         </div>
-                        <div className="text-xs text-gray-600">First to 10 wins</div>
                     </div>
-                </div>
 
                 <div className="flex flex-col items-center">
                     <canvas
@@ -383,7 +379,8 @@ const PongGame = () => {
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            </main>
         </div>
     )
 }

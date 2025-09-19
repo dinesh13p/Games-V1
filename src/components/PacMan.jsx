@@ -657,27 +657,20 @@ export default function PacMan() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6">
-            <div className="game-board p-8 rounded-2xl fade-in max-w-4xl w-full transform transition-all duration-500">
-                
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <button 
-                        className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                        onClick={handleBackToHome}
-                        aria-label="Back to Home"
-                    >
-                        ← Back to Home
-                    </button>
-                    <h1 className="text-3xl font-bold text-gray-800">🥠 Pac-Man</h1>
-                    <button 
-                        className="btn-secondary text-white px-3 py-1 rounded text-sm transform transition-all duration-200 hover:scale-105"
-                        onClick={resetScores}
-                        aria-label="Reset high score"
-                    >
-                        Reset High Score
-                    </button>
-                </div>
+        <div className="min-h-screen bg-gray-900 text-white">
+
+            <main className="flex items-center justify-center p-6">
+                <div className="game-board p-8 rounded-2xl fade-in max-w-4xl w-full transform transition-all duration-500 bg-gray-800 border border-gray-700">
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-3xl font-bold text-black">🥠 Pac-Man</h1>
+                        <button 
+                            className="btn-secondary text-white px-3 py-1 rounded text-sm transform transition-all duration-200 hover:scale-105"
+                            onClick={resetScores}
+                            aria-label="Reset high score"
+                        >
+                            Reset High Score
+                        </button>
+                    </div>
 
                 {/* Score Board */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
@@ -716,7 +709,7 @@ export default function PacMan() {
                     {/* Game Board */}
                     <div className="mb-6">
                         <div className="inline-block p-6 bg-gray-50 rounded-xl shadow-lg border-4 border-blue-600" 
-                             style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' }}>
+                            style={{ boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' }}>
                             <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${maze[0]?.length || 15}, 1fr)` }} role="presentation" aria-label="Pac-Man game board">
                                 {maze.map((row, y) => 
                                     row.map((cell, x) => (
@@ -742,7 +735,7 @@ export default function PacMan() {
                             <div className="flex items-center gap-2">
                                 <label className="text-sm font-semibold text-gray-700">Difficulty:</label>
                                 <select
-                                    className="border rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none bg-white"
+                                    className="border rounded-lg px-3 py-2 text-sm shadow-sm focus:outline-none bg-white text-black"
                                     value={difficulty}
                                     onChange={handleDifficultyChange}
                                 >
@@ -790,7 +783,8 @@ export default function PacMan() {
                         </p>
                     </div>
                 </div>
-            </div>
+                </div>
+            </main>
 
             <style jsx>{`
                 .fade-in {

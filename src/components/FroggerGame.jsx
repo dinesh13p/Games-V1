@@ -205,7 +205,7 @@ const FroggerGame = () => {
         const state = gameState.current
 
         // Determine dark mode
-    const darkMode = completions > 0 && completions % 2 === 0
+        const darkMode = completions % 2 === 1
 
         // Clear canvas
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -450,8 +450,34 @@ const FroggerGame = () => {
         if (animationRef.current) {
             cancelAnimationFrame(animationRef.current)
         }
-        startGame()
-    }, [startGame])
+        setGameStarted(false)
+        setGameOver(false)
+        setGameWon(false)
+        setIsPaused(false)
+        setScore(0)
+        setTimeLeft(30)
+        setCompletions(0)
+        setHighScore(() => {
+            try {
+                const saved = localStorage.getItem('froggerHighScore')
+                return saved ? parseInt(saved) : 0
+            } catch {
+                return 0
+            }
+        })
+        // Reset game state
+        const objects = initializeObjects()
+        gameState.current = {
+            frogX: 4,
+            frogY: 11,
+            cars: objects.cars,
+            logs: objects.logs,
+            gameTime: 30
+        }
+        setTimeout(() => {
+            startGame()
+        }, 0)
+    }, [initializeObjects, startGame])
 
     // Pause/Resume game
     const togglePause = useCallback(() => {
@@ -596,24 +622,19 @@ const FroggerGame = () => {
     }, [])
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6">
-            <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full transform transition-all duration-500">
-                <div className="flex justify-between items-center mb-6">
-                    <button 
-                        className="btn-secondary text-white px-4 py-2 rounded-lg font-semibold transform transition-all duration-200 hover:scale-105"
-                        onClick={() => navigate('/')}
-                        aria-label="Back to Home"
-                    >
-                        ← Back to Home
-                    </button>
-                    <div className="text-center">
-                        <h1 className="text-3xl font-bold text-gray-800">🐸 Frogger</h1>
+        <div className="min-h-screen bg-gray-900 text-white">
+
+            <main className="flex items-center justify-center p-6">
+                <div className="game-board p-8 rounded-2xl fade-in max-w-2xl w-full transform transition-all duration-500 bg-gray-800 border border-gray-700">
+                    <div className="flex justify-between items-center mb-6">
+                        <div className="text-center">
+                            <h1 className="text-3xl font-bold text-black">🐸 Frogger</h1>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-lg font-semibold text-black">Score: {score}</div>
+                            <div className="text-sm text-black">High: {highScore}</div>
+                        </div>
                     </div>
-                    <div className="text-right">
-                        <div className="text-lg font-semibold text-gray-700">Score: {score}</div>
-                        <div className="text-sm text-gray-600">High: {highScore}</div>
-                    </div>
-                </div>
 
                 <div className="flex flex-col items-center">
                     {/* Game Canvas */}
@@ -701,14 +722,15 @@ const FroggerGame = () => {
                                 {isPaused ? "▶️ Resume" : "⏸️ Pause"}
                             </button>
                         )}
-                        
-                        <button 
-                            className="btn-danger text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
-                            onClick={restartGame}
-                            aria-label="Restart the game"
-                        >
-                            🔄 Restart
-                        </button>
+                        {gameOver && (
+                            <button 
+                                className="btn-danger text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
+                                onClick={restartGame}
+                                aria-label="Restart the game"
+                            >
+                                🔄 Restart
+                            </button>
+                        )}
                     </div>
 
                     {/* Game Status */}
@@ -760,7 +782,8 @@ const FroggerGame = () => {
                         </div>
                     </div>
                 </div>
-            </div>
+                </div>
+            </main>
         </div>
     )
 }
