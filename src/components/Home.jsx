@@ -12,6 +12,9 @@ const Home = () => {
 		{ id: 'pong', title: 'Ping-Pong Game', emoji: '🏓', description: 'Classic arcade game. Beat the AI with your paddle skills!', path: '/pong', category: 'Sports', difficulty: 'Medium', isNew: false, isFeatured: false },
 		{ id: 'doodlejump', title: 'Doodle Jump', emoji: '🦘', description: 'Jump from platform to platform and avoid falling!', path: '/doodlejump', category: 'Platform', difficulty: 'Hard', isNew: false, isFeatured: false },
 		{ id: 'minesweeper', title: 'Minesweeper', emoji: '💣', description: 'Uncover all safe tiles without detonating a mine!', path: '/minesweeper', category: 'Puzzle', difficulty: 'Hard', isNew: false, isFeatured: false },
+		{ id: 'archery', title: 'Archery Game', emoji: '🏹', description: 'Test your skills in this archery challenge!', path: '/archery', category: 'Sports', difficulty: 'Medium', isNew: false, isFeatured: false },
+		{ id: 'tetris', title: 'Tetris', emoji: '🟦', description: 'Classic puzzle game. Fit the falling blocks into complete lines!', path: '/tetris', category: 'Puzzle', difficulty: 'Hard', isNew: false, isFeatured: false },
+		{ id: 'brickbreaker', title: 'Brick Breaker', emoji: '🧱', description: 'Break all the bricks with your ball! Don\'t let it fall!', path: '/brickbreaker', category: 'Arcade', difficulty: 'Medium', isNew: false, isFeatured: false },
 		{ id: 'spaceinvaders', title: 'Space Invaders', emoji: '🚀', description: 'Defend Earth from alien invasion. Shoot to survive! | DESKTOP ONLY GAME', path: '/spaceinvaders', category: 'Action', difficulty: 'Medium', isNew: false, isFeatured: true },
 		{ id: 'pacman', title: 'Pac-Man', emoji: '👻', description: 'Navigate the maze, eat pellets, and avoid ghosts! | DESKTOP ONLY GAME', path: '/pacman', category: 'Arcade', difficulty: 'Medium', isNew: false, isFeatured: true },
 	]
@@ -72,7 +75,7 @@ const Home = () => {
 								{/* Fixed layout: Left-Right alignment in single line */}
 								<div className="flex items-center justify-between gap-8 text-sm text-gray-400 w-full max-w-md">
 									<div className="flex flex-col items-center">
-										<span className="text-2xl font-bold text-white">9</span>
+										<span className="text-2xl font-bold text-white">12</span>
 										<p>Games Available</p>
 									</div>
 									<div className="flex flex-col items-center">

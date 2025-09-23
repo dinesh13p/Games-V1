@@ -7,8 +7,11 @@ import FlappyBird from './components/FlappyBird'
 import FroggerGame from './components/FroggerGame'
 import DoodleJump from './components/DoodleJump'
 import PongGame from './components/PongGame'
-import SpaceInvaders from './components/SpaceInvaders'
 import Minesweeper from './components/Minesweeper'
+import ArcheryGame from './components/ArcheryGame'
+import Tetris from './components/Tetris'
+import BrickBreaker from './components/BrickBreaker'
+import SpaceInvaders from './components/SpaceInvaders'
 import PacMan from './components/PacMan'
 
 function App() {
@@ -22,8 +25,11 @@ function App() {
         <Route path="/frogger" element={<FroggerGame />} />
         <Route path="/doodlejump" element={<DoodleJump />} />
         <Route path="/pong" element={<PongGame />} />
-        <Route path="/spaceinvaders" element={<SpaceInvaders />} />
         <Route path="/minesweeper" element={<Minesweeper />} />
+        <Route path="/archery" element={<ArcheryGame />} />
+        <Route path="/tetris" element={<Tetris />} />
+        <Route path="/brickbreaker" element={<BrickBreaker />} />
+        <Route path="/spaceinvaders" element={<SpaceInvaders />} />
         <Route path="/pacman" element={<PacMan />} />
       </Routes>
     </div>
