@@ -1,720 +1,1056 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
-const Tetris = () => {
-    const canvasRef = useRef(null)
-    const animationRef = useRef(null)
-    const lastDropTime = useRef(0)
-    
-    // Game constants
-    const BOARD_WIDTH = 10
-    const BOARD_HEIGHT = 20
-    const CELL_SIZE = 30
-    const CANVAS_WIDTH = BOARD_WIDTH * CELL_SIZE
-    const CANVAS_HEIGHT = BOARD_HEIGHT * CELL_SIZE
-    
-    // Game state
-    const [gameStarted, setGameStarted] = useState(false)
-    const [gameOver, setGameOver] = useState(false)
-    const [isPaused, setIsPaused] = useState(false)
-    const [score, setScore] = useState(0)
-    const [level, setLevel] = useState(1)
-    const [lines, setLines] = useState(0)
-    const [highScore, setHighScore] = useState(() => {
-        try {
-            const saved = localStorage.getItem('tetrisHighScore')
-            return saved ? parseInt(saved) : 0
-        } catch {
-            return 0
-        }
-    })
-    
-    // Mobile detection
-    const [isMobile, setIsMobile] = useState(false)
-    
-    // Tetris pieces (tetrominoes)
-    const PIECES = {
-        I: {
-            shape: [[1, 1, 1, 1]],
-            color: '#00f5ff'
-        },
-        O: {
-            shape: [
-                [1, 1],
-                [1, 1]
-            ],
-            color: '#ffff00'
-        },
-        T: {
-            shape: [
-                [0, 1, 0],
-                [1, 1, 1]
-            ],
-            color: '#a000f0'
-        },
-        S: {
-            shape: [
-                [0, 1, 1],
-                [1, 1, 0]
-            ],
-            color: '#00f000'
-        },
-        Z: {
-            shape: [
-                [1, 1, 0],
-                [0, 1, 1]
-            ],
-            color: '#f00000'
-        },
-        J: {
-            shape: [
-                [1, 0, 0],
-                [1, 1, 1]
-            ],
-            color: '#0000f0'
-        },
-        L: {
-            shape: [
-                [0, 0, 1],
-                [1, 1, 1]
-            ],
-            color: '#f0a000'
+/**
+ * Improved Tetris React component
+ * - DAS/ARR for smooth key holds
+ * - Hold piece
+ * - Better mobile touch handling (swipe/tap/double-tap)
+ * - LocalStorage high score
+ * - Clean UI with Next/Hold previews and responsive layout
+ *
+ * Drop-in replacement for your previous component.
+ */
+
+/* ---------- Config / Constants ---------- */
+const BOARD_WIDTH = 10;
+const BOARD_HEIGHT = 20;
+const CELL_SIZE = 28; // pixels for canvas draw
+const CANVAS_WIDTH = BOARD_WIDTH * CELL_SIZE;
+const CANVAS_HEIGHT = BOARD_HEIGHT * CELL_SIZE;
+
+const EMPTY = 0;
+
+/* Timing controls — tune to taste */
+const BASE_DROP = 800; // ms at level 1
+const LEVEL_DROP_DECREMENT = 70; // ms per level up (capped)
+const MIN_DROP = 80; // fastest drop cap
+
+/* DAS / ARR (feel) */
+const DAS_DELAY = 150; // ms before auto-repeat starts when holding left/right
+const ARR_INTERVAL = 60; // ms between repeated moves after DAS
+
+/* Soft drop modifier (accelerates drop and gives small points) */
+const SOFT_DROP_INTERVAL = 50;
+const SOFT_DROP_POINTS_PER_CELL = 1;
+
+/* Hard drop points multiplier per distance */
+const HARD_DROP_POINTS_PER_CELL = 2;
+
+/* Pieces */
+const PIECES = {
+    I: {
+        shape: [[1, 1, 1, 1]],
+        color: "#00f5ff",
+    },
+    O: {
+        shape: [
+            [1, 1],
+            [1, 1],
+        ],
+        color: "#f7e733",
+    },
+    T: {
+        shape: [
+            [0, 1, 0],
+            [1, 1, 1],
+        ],
+        color: "#a57cff",
+    },
+    S: {
+        shape: [
+            [0, 1, 1],
+            [1, 1, 0],
+        ],
+        color: "#48df57",
+    },
+    Z: {
+        shape: [
+            [1, 1, 0],
+            [0, 1, 1],
+        ],
+        color: "#ff6b6b",
+    },
+    J: {
+        shape: [
+            [1, 0, 0],
+            [1, 1, 1],
+        ],
+        color: "#3b82f6",
+    },
+    L: {
+        shape: [
+            [0, 0, 1],
+            [1, 1, 1],
+        ],
+        color: "#f59e0b",
+    },
+};
+
+function randPiece() {
+    const keys = Object.keys(PIECES);
+    const t = keys[Math.floor(Math.random() * keys.length)];
+    const p = { type: t, shape: PIECES[t].shape.map((r) => [...r]), color: PIECES[t].color };
+    return p;
+}
+
+/* Rotation helper — rotate clockwise with simple kicks (try center, left, right) */
+function rotateCW(piece) {
+    const s = piece.shape;
+    const w = s[0].length;
+    const h = s.length;
+    const rotated = Array.from({ length: w }, (_, r) => Array(h).fill(0));
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (s[y][x]) rotated[x][h - 1 - y] = s[y][x];
+    return { ...piece, shape: rotated };
+}
+
+/* Create empty board */
+function emptyBoard() {
+    return Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(EMPTY));
+}
+
+/* Deep copy board */
+function copyBoard(b) {
+    return b.map((r) => [...r]);
+}
+
+/* Check collision */
+function isValid(board, piece, px, py) {
+    if (!piece) return false;
+    const s = piece.shape;
+    for (let y = 0; y < s.length; y++) {
+        for (let x = 0; x < s[y].length; x++) {
+            if (!s[y][x]) continue;
+            const nx = px + x;
+            const ny = py + y;
+            if (nx < 0 || nx >= BOARD_WIDTH || ny >= BOARD_HEIGHT) return false;
+            if (ny >= 0 && board[ny][nx]) return false;
         }
     }
-    
-    // Game state
-    const gameState = useRef({
-        board: Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0)),
-        currentPiece: null,
-        currentX: 0,
-        currentY: 0,
-        nextPiece: null,
-        dropTime: 1000,
-        keys: { left: false, right: false, down: false, rotate: false }
-    })
-    
-    // Create a random piece
-    const createPiece = useCallback(() => {
-        const pieceTypes = Object.keys(PIECES)
-        const type = pieceTypes[Math.floor(Math.random() * pieceTypes.length)]
-        return {
-            type,
-            shape: PIECES[type].shape,
-            color: PIECES[type].color
+    return true;
+}
+
+/* Place piece onto board (returns new board) */
+function placePiece(board, piece, px, py) {
+    const nb = copyBoard(board);
+    const s = piece.shape;
+    for (let y = 0; y < s.length; y++) {
+        for (let x = 0; x < s[y].length; x++) {
+            if (!s[y][x]) continue;
+            const nx = px + x;
+            const ny = py + y;
+            if (ny >= 0 && ny < BOARD_HEIGHT) nb[ny][nx] = piece.color;
         }
-    }, [])
-    
-    // Rotate piece
-    const rotatePiece = useCallback((piece) => {
-        const rotated = piece.shape[0].map((_, i) =>
-            piece.shape.map(row => row[i]).reverse()
-        )
-        return { ...piece, shape: rotated }
-    }, [])
-    
-    // Check if position is valid
-    const isValidPosition = useCallback((board, piece, x, y) => {
-        for (let py = 0; py < piece.shape.length; py++) {
-            for (let px = 0; px < piece.shape[py].length; px++) {
-                if (piece.shape[py][px]) {
-                    const newX = x + px
-                    const newY = y + py
-                    
-                    if (
-                        newX < 0 ||
-                        newX >= BOARD_WIDTH ||
-                        newY >= BOARD_HEIGHT ||
-                        (newY >= 0 && board[newY][newX])
-                    ) {
-                        return false
-                    }
-                }
-            }
+    }
+    return nb;
+}
+
+/* Clear full lines — return {board, cleared} */
+function clearLines(board) {
+    const newBoard = board.filter((row) => row.some((c) => !c));
+    const cleared = BOARD_HEIGHT - newBoard.length;
+    while (newBoard.length < BOARD_HEIGHT) newBoard.unshift(Array(BOARD_WIDTH).fill(EMPTY));
+    return { board: newBoard, cleared };
+}
+
+/* Compute ghost drop Y */
+function getGhostY(board, piece, px, py) {
+    let gy = py;
+    while (isValid(board, piece, px, gy + 1)) gy++;
+    return gy;
+}
+
+/* Compute drop speed by level */
+function dropTimeForLevel(level) {
+    const dt = Math.max(MIN_DROP, BASE_DROP - (level - 1) * LEVEL_DROP_DECREMENT);
+    return dt;
+}
+
+/* Save/load highscore */
+const HS_KEY = "tetris_highscore_v1";
+function loadHighScore() {
+    const v = localStorage.getItem(HS_KEY);
+    return v ? parseInt(v, 10) || 0 : 0;
+}
+function saveHighScore(v) {
+    localStorage.setItem(HS_KEY, String(v || 0));
+}
+
+/* ---------- React Component ---------- */
+export default function Tetris() {
+    const canvasRef = useRef(null);
+    const rafRef = useRef(null);
+
+    /* ---------- Game state refs (mutated directly for responsiveness) ---------- */
+    const stateRef = useRef({
+        board: emptyBoard(),
+        current: null, // piece object
+        px: 0,
+        py: -2, // spawn slightly above
+        next: null,
+        hold: null,
+        holdUsed: false, // one swap per drop
+        score: 0,
+        lines: 0,
+        level: 1,
+        dropTimer: dropTimeForLevel(1),
+        lastDrop: performance.now(),
+        lastSoftDrop: performance.now(),
+    });
+
+    /* ---------- React visible state ---------- */
+    const [started, setStarted] = useState(false);
+    const [paused, setPaused] = useState(false);
+    const [gameOver, setGameOver] = useState(false);
+    const [score, setScore] = useState(0);
+    const [lines, setLines] = useState(0);
+    const [level, setLevel] = useState(1);
+    const [highScore, setHighScore] = useState(loadHighScore());
+    const [isMobile, setIsMobile] = useState(false);
+    const [showControlsHint, setShowControlsHint] = useState(true);
+
+    /* ---------- Input management for DAS/ARR ---------- */
+    const keysHeld = useRef({ left: false, right: false, down: false });
+    const dasTimer = useRef({ left: 0, right: 0 });
+    const arrIntervalRef = useRef({ left: null, right: null });
+
+    /* touch handling */
+    const touchRef = useRef({
+        startX: 0,
+        startY: 0,
+        startT: 0,
+        lastTap: 0,
+    });
+
+    /* ---------- Helpers to sync state to React UI ---------- */
+    const syncStateToUI = useCallback(() => {
+        const s = stateRef.current;
+        setScore(s.score);
+        setLines(s.lines);
+        setLevel(s.level);
+    }, []);
+
+    /* Initialize or reset game */
+    const resetGameState = useCallback(() => {
+        const s = stateRef.current;
+        s.board = emptyBoard();
+        s.current = randPiece();
+        s.next = randPiece();
+        s.hold = null;
+        s.holdUsed = false;
+        s.px = Math.floor((BOARD_WIDTH - s.current.shape[0].length) / 2);
+        s.py = -2;
+        s.score = 0;
+        s.lines = 0;
+        s.level = 1;
+        s.dropTimer = dropTimeForLevel(1);
+        s.lastDrop = performance.now();
+        s.lastSoftDrop = performance.now();
+        syncStateToUI();
+        setGameOver(false);
+    }, [syncStateToUI]);
+
+    /* Spawn new piece (after piece placed) */
+    const spawnNext = useCallback(() => {
+        const s = stateRef.current;
+        s.current = s.next || randPiece();
+        s.next = randPiece();
+        s.px = Math.floor((BOARD_WIDTH - s.current.shape[0].length) / 2);
+        s.py = -2;
+        s.holdUsed = false;
+        // immediate loss check
+        if (!isValid(s.board, s.current, s.px, s.py)) {
+            // game over
+            setGameOver(true);
+            setStarted(false);
+            const hs = Math.max(s.score, loadHighScore());
+            setHighScore(hs);
+            saveHighScore(hs);
         }
-        return true
-    }, [])
-    
-    // Place piece on board
-    const placePiece = useCallback((board, piece, x, y) => {
-        const newBoard = board.map(row => [...row])
-        for (let py = 0; py < piece.shape.length; py++) {
-            for (let px = 0; px < piece.shape[py].length; px++) {
-                if (piece.shape[py][px]) {
-                    const newX = x + px
-                    const newY = y + py
-                    if (newY >= 0) {
-                        newBoard[newY][newX] = piece.color
-                    }
-                }
-            }
+    }, []);
+
+    /* Score/level update when lines cleared */
+    const onLinesCleared = useCallback((count) => {
+        if (!count) return;
+        // Tetris scoring (classic): 1=40,2=100,3=300,4=1200 times level
+        const lineScores = [0, 40, 100, 300, 1200];
+        const s = stateRef.current;
+        const points = lineScores[count] * s.level;
+        s.score += points;
+        s.lines += count;
+        const newLevel = Math.floor(s.lines / 10) + 1;
+        if (newLevel !== s.level) {
+            s.level = newLevel;
+            s.dropTimer = dropTimeForLevel(newLevel);
+            // small visual hint (we update React state below)
         }
-        return newBoard
-    }, [])
-    
-    // Clear completed lines
-    const clearLines = useCallback((board) => {
-        const newBoard = board.filter(row => row.some(cell => !cell))
-        const linesCleared = BOARD_HEIGHT - newBoard.length
-        
-        // Add empty rows at the top
-        while (newBoard.length < BOARD_HEIGHT) {
-            newBoard.unshift(Array(BOARD_WIDTH).fill(0))
-        }
-        
-        return { board: newBoard, linesCleared }
-    }, [])
-    
-    // Calculate score
-    const calculateScore = useCallback((linesCleared, level) => {
-        const lineScores = [0, 40, 100, 300, 1200]
-        return lineScores[linesCleared] * level
-    }, [])
-    
-    // Move piece
-    const movePiece = useCallback((direction) => {
-        if (!gameStarted || gameOver || isPaused) return
-        
-        const state = gameState.current
-        let newX = state.currentX
-        let newY = state.currentY
-        let newPiece = state.currentPiece
-        
-        switch (direction) {
-            case 'left':
-                newX = state.currentX - 1
-                break
-            case 'right':
-                newX = state.currentX + 1
-                break
-            case 'down':
-                newY = state.currentY + 1
-                break
-            case 'rotate':
-                newPiece = rotatePiece(state.currentPiece)
-                break
-        }
-        
-        if (isValidPosition(state.board, newPiece, newX, newY)) {
-            state.currentX = newX
-            state.currentY = newY
-            state.currentPiece = newPiece
-        }
-    }, [gameStarted, gameOver, isPaused, rotatePiece, isValidPosition])
-    
-    // Drop piece
-    const dropPiece = useCallback(() => {
-        if (!gameStarted || gameOver || isPaused) return
-        
-        const state = gameState.current
-        const newY = state.currentY + 1
-        
-        if (isValidPosition(state.board, state.currentPiece, state.currentX, newY)) {
-            state.currentY = newY
+        // sync to UI
+        syncStateToUI();
+    }, [syncStateToUI]);
+
+    /* Hard drop */
+    const hardDrop = useCallback(() => {
+        if (!started || paused || gameOver) return;
+        const s = stateRef.current;
+        const gy = getGhostY(s.board, s.current, s.px, s.py);
+        const distance = gy - s.py;
+        s.py = gy;
+        // place and scoring
+        s.board = placePiece(s.board, s.current, s.px, s.py);
+        s.score += distance * HARD_DROP_POINTS_PER_CELL;
+        const { board: nb, cleared } = clearLines(s.board);
+        s.board = nb;
+        if (cleared) onLinesCleared(cleared);
+        spawnNext();
+        syncStateToUI();
+        s.lastDrop = performance.now();
+    }, [started, paused, gameOver, spawnNext, onLinesCleared, syncStateToUI]);
+
+    /* Soft drop (one step) */
+    const softDropOne = useCallback(() => {
+        if (!started || paused || gameOver) return false;
+        const s = stateRef.current;
+        if (isValid(s.board, s.current, s.px, s.py + 1)) {
+            s.py++;
+            s.score += SOFT_DROP_POINTS_PER_CELL;
+            syncStateToUI();
+            return true;
         } else {
-            // Place piece and spawn new one
-            const newBoard = placePiece(state.board, state.currentPiece, state.currentX, state.currentY)
-            const { board: clearedBoard, linesCleared } = clearLines(newBoard)
-            
-            state.board = clearedBoard
-            
-            // Update score and lines
-            if (linesCleared > 0) {
-                const points = calculateScore(linesCleared, level)
-                setScore(prev => prev + points)
-                setLines(prev => {
-                    const newLines = prev + linesCleared
-                    const newLevel = Math.floor(newLines / 10) + 1
-                    if (newLevel > level) {
-                        setLevel(newLevel)
-                        state.dropTime = Math.max(50, 1000 - (newLevel - 1) * 50)
-                    }
-                    return newLines
-                })
-            }
-            
-            // Spawn new piece
-            state.currentPiece = state.nextPiece || createPiece()
-            state.nextPiece = createPiece()
-            state.currentX = Math.floor((BOARD_WIDTH - state.currentPiece.shape[0].length) / 2)
-            state.currentY = 0
-            
-            // Check game over
-            if (!isValidPosition(state.board, state.currentPiece, state.currentX, state.currentY)) {
-                setGameOver(true)
-                if (score > highScore) {
-                    setHighScore(score)
-                    try {
-                        localStorage.setItem('tetrisHighScore', score.toString())
-                    } catch (error) {
-                        console.warn('Could not save high score:', error)
-                    }
-                }
+            // place piece
+            s.board = placePiece(s.board, s.current, s.px, s.py);
+            const { board: nb, cleared } = clearLines(s.board);
+            s.board = nb;
+            if (cleared) onLinesCleared(cleared);
+            spawnNext();
+            s.lastDrop = performance.now();
+            syncStateToUI();
+            return false;
+        }
+    }, [started, paused, gameOver, spawnNext, onLinesCleared, syncStateToUI]);
+
+    /* Move piece (left/right) with collision check */
+    const tryMove = useCallback((dx) => {
+        const s = stateRef.current;
+        if (!s.current) return false;
+        const nx = s.px + dx;
+        if (isValid(s.board, s.current, nx, s.py)) {
+            s.px = nx;
+            return true;
+        }
+        return false;
+    }, []);
+
+    /* Rotate with simple kicks */
+    const tryRotate = useCallback(() => {
+        const s = stateRef.current;
+        if (!s.current) return;
+        const r = rotateCW(s.current);
+        // try center
+        if (isValid(s.board, r, s.px, s.py)) {
+            s.current = r;
+            return;
+        }
+        // try small kicks: left, right, up
+        if (isValid(s.board, r, s.px - 1, s.py)) {
+            s.px -= 1;
+            s.current = r;
+            return;
+        }
+        if (isValid(s.board, r, s.px + 1, s.py)) {
+            s.px += 1;
+            s.current = r;
+            return;
+        }
+        if (isValid(s.board, r, s.px, s.py - 1)) {
+            s.py -= 1;
+            s.current = r;
+            return;
+        }
+        // else rotation fails
+    }, []);
+
+    /* Hold piece */
+    const holdPiece = useCallback(() => {
+        if (!started || paused || gameOver) return;
+        const s = stateRef.current;
+        if (s.holdUsed) return; // only one hold per drop
+        const current = s.current;
+        if (!current) return;
+        if (!s.hold) {
+            s.hold = { ...current };
+            spawnNext();
+        } else {
+            const temp = s.hold;
+            s.hold = { ...current };
+            s.current = { ...temp };
+            s.px = Math.floor((BOARD_WIDTH - s.current.shape[0].length) / 2);
+            s.py = -2;
+            if (!isValid(s.board, s.current, s.px, s.py)) {
+                setGameOver(true);
+                setStarted(false);
+                const hs = Math.max(s.score, loadHighScore());
+                setHighScore(hs);
+                saveHighScore(hs);
             }
         }
-    }, [gameStarted, gameOver, isPaused, isValidPosition, placePiece, clearLines, calculateScore, createPiece, level, score, highScore])
-    
-    // Render game
-    const render = useCallback(() => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-        
-        const ctx = canvas.getContext('2d')
-        const state = gameState.current
-        
-        // Clear canvas
-        ctx.fillStyle = '#000'
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-        
-        // Draw board
+        s.holdUsed = true;
+        syncStateToUI();
+    }, [started, paused, gameOver, spawnNext, syncStateToUI]);
+
+    /* ---------- Rendering (canvas) ---------- */
+    const renderCanvas = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const s = stateRef.current;
+
+        // Clear
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // bg
+        ctx.fillStyle = "#0b1220";
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // draw board cells
         for (let y = 0; y < BOARD_HEIGHT; y++) {
             for (let x = 0; x < BOARD_WIDTH; x++) {
-                if (state.board[y][x]) {
-                    ctx.fillStyle = state.board[y][x]
-                    ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                    ctx.strokeStyle = '#333'
-                    ctx.strokeRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                const val = s.board[y][x];
+                if (val) {
+                    ctx.fillStyle = val;
+                    ctx.fillRect(x * CELL_SIZE + 1, y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+                    // subtle inner shadow
+                    ctx.strokeStyle = "rgba(0,0,0,0.25)";
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x * CELL_SIZE + 1.5, y * CELL_SIZE + 1.5, CELL_SIZE - 3, CELL_SIZE - 3);
+                } else {
+                    // empty cell subtle grid
+                    ctx.fillStyle = "#06111a";
+                    ctx.fillRect(x * CELL_SIZE + 1, y * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
                 }
             }
         }
-        
-        // Draw current piece
-        if (state.currentPiece) {
-            ctx.fillStyle = state.currentPiece.color
-            for (let py = 0; py < state.currentPiece.shape.length; py++) {
-                for (let px = 0; px < state.currentPiece.shape[py].length; px++) {
-                    if (state.currentPiece.shape[py][px]) {
-                        const x = (state.currentX + px) * CELL_SIZE
-                        const y = (state.currentY + py) * CELL_SIZE
-                        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE)
-                        ctx.strokeStyle = '#fff'
-                        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE)
+
+        // ghost
+        if (s.current) {
+            const gy = getGhostY(s.board, s.current, s.px, s.py);
+            ctx.globalAlpha = 0.28;
+            ctx.fillStyle = s.current.color;
+            for (let y = 0; y < s.current.shape.length; y++) {
+                for (let x = 0; x < s.current.shape[0].length; x++) {
+                    if (s.current.shape[y][x]) {
+                        ctx.fillRect((s.px + x) * CELL_SIZE + 1, (gy + y) * CELL_SIZE + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+                    }
+                }
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // current piece
+        if (s.current) {
+            for (let y = 0; y < s.current.shape.length; y++) {
+                for (let x = 0; x < s.current.shape[0].length; x++) {
+                    if (s.current.shape[y][x]) {
+                        const fx = (s.px + x) * CELL_SIZE + 1;
+                        const fy = (s.py + y) * CELL_SIZE + 1;
+                        ctx.fillStyle = s.current.color;
+                        ctx.fillRect(fx, fy, CELL_SIZE - 2, CELL_SIZE - 2);
+                        // highlight edge
+                        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(fx + 0.5, fy + 0.5, CELL_SIZE - 3, CELL_SIZE - 3);
                     }
                 }
             }
         }
-        
-        // Draw grid lines
-        ctx.strokeStyle = '#333'
-        ctx.lineWidth = 1
-        for (let x = 0; x <= BOARD_WIDTH; x++) {
-            ctx.beginPath()
-            ctx.moveTo(x * CELL_SIZE, 0)
-            ctx.lineTo(x * CELL_SIZE, CANVAS_HEIGHT)
-            ctx.stroke()
+
+        // grid lines (subtle)
+        ctx.strokeStyle = "rgba(255,255,255,0.03)";
+        ctx.lineWidth = 1;
+        for (let x = 1; x < BOARD_WIDTH; x++) {
+            ctx.beginPath();
+            ctx.moveTo(x * CELL_SIZE, 0);
+            ctx.lineTo(x * CELL_SIZE, CANVAS_HEIGHT);
+            ctx.stroke();
         }
-        for (let y = 0; y <= BOARD_HEIGHT; y++) {
-            ctx.beginPath()
-            ctx.moveTo(0, y * CELL_SIZE)
-            ctx.lineTo(CANVAS_WIDTH, y * CELL_SIZE)
-            ctx.stroke()
+        for (let y = 1; y < BOARD_HEIGHT; y++) {
+            ctx.beginPath();
+            ctx.moveTo(0, y * CELL_SIZE);
+            ctx.lineTo(CANVAS_WIDTH, y * CELL_SIZE);
+            ctx.stroke();
         }
-    }, [])
-    
-    // Game loop
-    const gameLoop = useCallback((currentTime) => {
-        if (!gameStarted || gameOver || isPaused) {
-            render()
-            animationRef.current = requestAnimationFrame(gameLoop)
-            return
-        }
-        
-        // Auto drop
-        if (currentTime - lastDropTime.current > gameState.current.dropTime) {
-            dropPiece()
-            lastDropTime.current = currentTime
-        }
-        
-        // Handle continuous key presses
-        const state = gameState.current
-        if (state.keys.left) movePiece('left')
-        if (state.keys.right) movePiece('right')
-        if (state.keys.down) dropPiece()
-        
-        render()
-        animationRef.current = requestAnimationFrame(gameLoop)
-    }, [gameStarted, gameOver, isPaused, dropPiece, movePiece, render])
-    
-    // Initialize game
-    const initializeGame = useCallback(() => {
-        const state = gameState.current
-        state.board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0))
-        state.currentPiece = createPiece()
-        state.nextPiece = createPiece()
-        state.currentX = Math.floor((BOARD_WIDTH - state.currentPiece.shape[0].length) / 2)
-        state.currentY = 0
-        state.dropTime = 1000
-        setScore(0)
-        setLevel(1)
-        setLines(0)
-    }, [createPiece])
-    
-    // Start game
+    }, []);
+
+    /* ---------- Game loop (animation frame) ---------- */
+    const lastFrameRef = useRef(performance.now());
+
+    const gameLoop = useCallback(
+        (now) => {
+            rafRef.current = requestAnimationFrame(gameLoop);
+
+            // mobile/resize redraw frequently
+            renderCanvas();
+
+            if (!started || paused || gameOver) {
+                lastFrameRef.current = now;
+                return;
+            }
+
+            const s = stateRef.current;
+
+            // handle soft drop when key is held (rate-limited)
+            if (keysHeld.current.down) {
+                if (now - s.lastSoftDrop >= SOFT_DROP_INTERVAL) {
+                    s.lastSoftDrop = now;
+                    softDropOne();
+                }
+            }
+
+            // auto-drop
+            if (now - s.lastDrop >= s.dropTimer) {
+                // try move down; if can't, lock piece
+                if (isValid(s.board, s.current, s.px, s.py + 1)) {
+                    s.py++;
+                } else {
+                    // lock
+                    s.board = placePiece(s.board, s.current, s.px, s.py);
+                    const { board: nb, cleared } = clearLines(s.board);
+                    s.board = nb;
+                    if (cleared) onLinesCleared(cleared);
+                    spawnNext();
+                }
+                s.lastDrop = now;
+                syncStateToUI();
+            }
+
+            // manage DAS/ARR: handled via timers in keydown/keyup handlers (we still keep loop for completeness)
+        },
+        [started, paused, gameOver, renderCanvas, softDropOne, onLinesCleared, spawnNext, syncStateToUI]
+    );
+
+    /* ---------- Start / Restart ---------- */
     const startGame = useCallback(() => {
-        setGameStarted(true)
-        setGameOver(false)
-        setIsPaused(false)
-        initializeGame()
-        lastDropTime.current = 0
-        animationRef.current = requestAnimationFrame(gameLoop)
-    }, [initializeGame, gameLoop])
-    
-    // Restart game
+        resetGameState();
+        setStarted(true);
+        setPaused(false);
+        setGameOver(false);
+        // set local UI states
+        setScore(0);
+        setLines(0);
+        setLevel(1);
+        // start loop
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(gameLoop);
+    }, [resetGameState, gameLoop]);
+
     const restartGame = useCallback(() => {
-        if (animationRef.current) {
-            cancelAnimationFrame(animationRef.current)
-        }
-        setGameStarted(false)
-        setGameOver(false)
-        setIsPaused(false)
-        setTimeout(() => startGame(), 0)
-    }, [startGame])
-    
-    // Toggle pause
-    const togglePause = useCallback(() => {
-        if (!gameStarted || gameOver) return
-        setIsPaused(prev => !prev)
-    }, [gameStarted, gameOver])
-    
-    // Keyboard controls
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        startGame();
+    }, [startGame]);
+
+    /* ---------- Input Handlers (keyboard) ---------- */
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (!gameStarted && (e.key === ' ' || e.key === 'Enter')) {
-                e.preventDefault()
-                startGame()
-                return
+        function onKeyDown(e) {
+            // start with space/enter
+            if (!started && (e.code === "Space" || e.key === "Enter")) {
+                e.preventDefault();
+                startGame();
+                return;
             }
-            
-            if (gameStarted && e.key === ' ') {
-                e.preventDefault()
-                togglePause()
-                return
+            if (gameOver && (e.code === "Space" || e.key === "Enter")) {
+                e.preventDefault();
+                restartGame();
+                return;
             }
-            
-            if (gameOver && (e.key === ' ' || e.key === 'Enter')) {
-                e.preventDefault()
-                restartGame()
-                return
+            if (!started || gameOver) return;
+
+            // pause/resume
+            if (e.key === "p" || e.key === "P") {
+                setPaused((p) => !p);
+                return;
             }
-            
-            if (!gameStarted || gameOver || isPaused) return
-            
-            const state = gameState.current
-            
-            switch (e.key) {
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    e.preventDefault()
-                    state.keys.left = true
-                    movePiece('left')
-                    break
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    e.preventDefault()
-                    state.keys.right = true
-                    movePiece('right')
-                    break
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    e.preventDefault()
-                    state.keys.down = true
-                    dropPiece()
-                    break
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                    e.preventDefault()
-                    movePiece('rotate')
-                    break
+
+            // left/right/down hold logic, with DAS
+            if (["ArrowLeft", "a", "A"].includes(e.key)) {
+                e.preventDefault();
+                if (keysHeld.current.left) return; // already held
+                keysHeld.current.left = true;
+                dasTimer.current.left = performance.now();
+                // immediate move
+                const moved = tryMove(-1);
+                if (moved) syncStateToUI();
+                // start ARR after DAS
+                arrIntervalRef.current.left = setTimeout(() => {
+                    arrIntervalRef.current.left = setInterval(() => {
+                        const moved2 = tryMove(-1);
+                        if (moved2) syncStateToUI();
+                    }, ARR_INTERVAL);
+                }, DAS_DELAY);
+                return;
+            }
+
+            if (["ArrowRight", "d", "D"].includes(e.key)) {
+                e.preventDefault();
+                if (keysHeld.current.right) return;
+                keysHeld.current.right = true;
+                dasTimer.current.right = performance.now();
+                const moved = tryMove(1);
+                if (moved) syncStateToUI();
+                arrIntervalRef.current.right = setTimeout(() => {
+                    arrIntervalRef.current.right = setInterval(() => {
+                        const moved2 = tryMove(1);
+                        if (moved2) syncStateToUI();
+                    }, ARR_INTERVAL);
+                }, DAS_DELAY);
+                return;
+            }
+
+            if (["ArrowDown", "s", "S"].includes(e.key)) {
+                e.preventDefault();
+                if (keysHeld.current.down) return;
+                keysHeld.current.down = true;
+                // immediate soft drop one
+                softDropOne();
+                return;
+            }
+
+            if (["ArrowUp", "w", "W"].includes(e.key)) {
+                e.preventDefault();
+                tryRotate();
+                syncStateToUI();
+                return;
+            }
+
+            if (e.code === "Space") {
+                e.preventDefault();
+                hardDrop();
+                syncStateToUI();
+                return;
+            }
+
+            if (e.key === "c" || e.key === "C") {
+                e.preventDefault();
+                holdPiece();
+                syncStateToUI();
+                return;
             }
         }
-        
-        const handleKeyUp = (e) => {
-            const state = gameState.current
-            switch (e.key) {
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    state.keys.left = false
-                    break
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    state.keys.right = false
-                    break
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    state.keys.down = false
-                    break
+
+        function onKeyUp(e) {
+            if (["ArrowLeft", "a", "A"].includes(e.key)) {
+                keysHeld.current.left = false;
+                if (arrIntervalRef.current.left) {
+                    clearInterval(arrIntervalRef.current.left);
+                    arrIntervalRef.current.left = null;
+                }
+            }
+            if (["ArrowRight", "d", "D"].includes(e.key)) {
+                keysHeld.current.right = false;
+                if (arrIntervalRef.current.right) {
+                    clearInterval(arrIntervalRef.current.right);
+                    arrIntervalRef.current.right = null;
+                }
+            }
+            if (["ArrowDown", "s", "S"].includes(e.key)) {
+                keysHeld.current.down = false;
             }
         }
-        
-        window.addEventListener('keydown', handleKeyDown)
-        window.addEventListener('keyup', handleKeyUp)
-        
+
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
         return () => {
-            window.removeEventListener('keydown', handleKeyDown)
-            window.removeEventListener('keyup', handleKeyUp)
-        }
-    }, [gameStarted, gameOver, isPaused, startGame, togglePause, restartGame, movePiece, dropPiece])
-    
-    // Initialize animation loop
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+            // clear intervals
+            if (arrIntervalRef.current.left) clearInterval(arrIntervalRef.current.left);
+            if (arrIntervalRef.current.right) clearInterval(arrIntervalRef.current.right);
+        };
+    }, [started, gameOver, tryMove, softDropOne, tryRotate, hardDrop, holdPiece, restartGame, syncStateToUI]);
+
+    /* ---------- Touch controls (mobile) ---------- */
     useEffect(() => {
-        animationRef.current = requestAnimationFrame(gameLoop)
-        return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current)
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        function onTouchStart(e) {
+            if (!e.touches || !e.touches[0]) return;
+            const t = e.touches[0];
+            touchRef.current.startX = t.clientX;
+            touchRef.current.startY = t.clientY;
+            touchRef.current.startT = performance.now();
+        }
+
+        function onTouchMove(e) {
+            // prevent scroll while playing
+            if (started && !paused) e.preventDefault();
+        }
+
+        function onTouchEnd(e) {
+            const now = performance.now();
+            const deltaX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX - touchRef.current.startX : 0;
+            const deltaY = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientY - touchRef.current.startY : 0;
+            const dt = now - touchRef.current.startT;
+
+            const absX = Math.abs(deltaX);
+            const absY = Math.abs(deltaY);
+
+            // double tap detection (hard drop)
+            if (now - touchRef.current.lastTap < 300) {
+                // double-tap
+                hardDrop();
+                touchRef.current.lastTap = 0;
+                return;
             }
+
+            // swipes
+            if (absX > 30 && absX > absY) {
+                if (deltaX > 0) {
+                    // swipe right
+                    tryMove(1);
+                    syncStateToUI();
+                } else {
+                    // swipe left
+                    tryMove(-1);
+                    syncStateToUI();
+                }
+                touchRef.current.lastTap = now;
+                return;
+            }
+
+            if (absY > 30 && absY > absX) {
+                if (deltaY > 0) {
+                    // swipe down -> soft drop (or fast drop if long swipe)
+                    softDropOne();
+                    syncStateToUI();
+                } else {
+                    // swipe up -> rotate
+                    tryRotate();
+                    syncStateToUI();
+                }
+                touchRef.current.lastTap = now;
+                return;
+            }
+
+            // tap -> rotate
+            tryRotate();
+            syncStateToUI();
+            touchRef.current.lastTap = now;
         }
-    }, [gameLoop])
-    
-    // Mobile detection
+
+        canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+        canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+        canvas.addEventListener("touchend", onTouchEnd, { passive: false });
+
+        return () => {
+            canvas.removeEventListener("touchstart", onTouchStart);
+            canvas.removeEventListener("touchmove", onTouchMove);
+            canvas.removeEventListener("touchend", onTouchEnd);
+        };
+    }, [started, paused, tryMove, tryRotate, softDropOne, hardDrop, syncStateToUI]);
+
+    /* ---------- Resize & mobile detection ---------- */
     useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768)
+        function onResize() {
+            setIsMobile(window.innerWidth < 768);
         }
-        checkMobile()
-        window.addEventListener('resize', checkMobile)
-        return () => window.removeEventListener('resize', checkMobile)
-    }, [])
-    
-    // Mobile controls
-    const handleMobileControl = useCallback((action) => {
-        switch (action) {
-            case 'left':
-                movePiece('left')
-                break
-            case 'right':
-                movePiece('right')
-                break
-            case 'down':
-                dropPiece()
-                break
-            case 'rotate':
-                movePiece('rotate')
-                break
-        }
-    }, [movePiece, dropPiece])
-    
-    // Reset high score
-    const resetScore = () => {
-        setHighScore(0)
-        try {
-            localStorage.removeItem('tetrisHighScore')
-        } catch (error) {
-            console.warn('Could not clear high score:', error)
-        }
-    }
-    
+        onResize();
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
+
+    /* ---------- Start animation loop once mounted ---------- */
+    useEffect(() => {
+        // initial render
+        renderCanvas();
+        rafRef.current = requestAnimationFrame(gameLoop);
+        return () => {
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        };
+    }, [gameLoop, renderCanvas]);
+
+    /* ---------- Sync visible score/level on mount ---------- */
+    useEffect(() => {
+        syncStateToUI();
+    }, [syncStateToUI]);
+
+    /* ---------- UI Helper: small preview grid JSX ---------- */
+    const PiecePreview = ({ piece }) => {
+        if (!piece) return <div className="text-xs text-gray-400">—</div>;
+        const w = piece.shape[0].length;
+        const h = piece.shape.length;
+        return (
+            <div
+                className="inline-grid gap-0"
+                style={{
+                    gridTemplateColumns: `repeat(${w}, ${CELL_SIZE / 2}px)`,
+                    gridTemplateRows: `repeat(${h}, ${CELL_SIZE / 2}px)`,
+                }}
+            >
+                {piece.shape.map((row, ry) =>
+                    row.map((cell, rx) => (
+                        <div
+                            key={`${rx}-${ry}`}
+                            style={{
+                                width: CELL_SIZE / 2,
+                                height: CELL_SIZE / 2,
+                                background: cell ? piece.color : "transparent",
+                                border: cell ? "1px solid rgba(0,0,0,0.15)" : "1px dashed rgba(255,255,255,0.03)",
+                                boxSizing: "border-box",
+                            }}
+                        />
+                    ))
+                )}
+            </div>
+        );
+    };
+
+    /* ---------- Control bar handlers (buttons) ---------- */
+    const onBtnLeft = () => {
+        tryMove(-1);
+        syncStateToUI();
+    };
+    const onBtnRight = () => {
+        tryMove(1);
+        syncStateToUI();
+    };
+    const onBtnRotate = () => {
+        tryRotate();
+        syncStateToUI();
+    };
+    const onBtnDown = () => {
+        softDropOne();
+        syncStateToUI();
+    };
+    const onBtnDrop = () => {
+        hardDrop();
+        syncStateToUI();
+    };
+    const onBtnHold = () => {
+        holdPiece();
+        syncStateToUI();
+    };
+
+    /* Toggle hints visibility */
+    useEffect(() => {
+        const t = setTimeout(() => setShowControlsHint(false), 5000);
+        return () => clearTimeout(t);
+    }, []);
+
+    /* ---------- Rendering component ---------- */
+    const s = stateRef.current;
+
     return (
-        <div className="min-h-screen bg-gray-900 text-white">
-            <main className="flex items-center justify-center p-6">
-                <div className="bg-gray-800 border border-gray-700 p-8 rounded-2xl shadow-2xl max-w-4xl w-full">
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="text-center">
-                            <h1 className="text-3xl font-bold text-white">🟦 Tetris</h1>
-                        </div>
-                        <div className="text-right">
-                            <button 
-                                className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transform transition-all duration-200 hover:scale-105"
-                                onClick={resetScore}
+        <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
+            <div className="w-full max-w-5xl">
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 shadow-2xl">
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">🧩 Tetris — Smooth Controls</h1>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => {
+                                    saveHighScore(0);
+                                    setHighScore(0);
+                                }}
+                                className="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-md text-sm"
+                                title="Reset high score"
                             >
-                                Reset High Score
+                                Reset HS
                             </button>
+                            <div className="text-right text-sm">
+                                <div className="text-xs text-slate-300">High Score</div>
+                                <div className="text-base font-semibold">{highScore.toLocaleString()}</div>
+                            </div>
                         </div>
                     </div>
-                    
-                    {/* Game Stats */}
-                    <div className="grid grid-cols-4 gap-4 mb-6">
-                        <div className="text-center p-4 bg-blue-100 rounded-xl">
-                            <div className="text-xl font-bold text-blue-600 mb-1">Score</div>
-                            <div className="text-2xl font-semibold text-gray-700">{score.toLocaleString()}</div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        {/* Left: Info & Next/Hold */}
+                        <div className="order-2 lg:order-1 flex flex-col gap-4">
+                            <div className="bg-slate-700 p-3 rounded-lg text-center">
+                                <div className="text-xs text-slate-300">Score</div>
+                                <div className="text-2xl font-bold">{score.toLocaleString()}</div>
+                            </div>
+
+                            <div className="bg-slate-700 p-3 rounded-lg text-center">
+                                <div className="text-xs text-slate-300">Level</div>
+                                <div className="text-xl font-bold">{level}</div>
+                            </div>
+
+                            <div className="bg-slate-700 p-3 rounded-lg text-center">
+                                <div className="text-xs text-slate-300">Lines</div>
+                                <div className="text-xl font-bold">{lines}</div>
+                            </div>
+
+                            <div className="bg-slate-700 p-3 rounded-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs text-slate-300">Next</div>
+                                    <div className="text-xs text-slate-300">Hold</div>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="bg-black p-2 rounded-md border border-slate-600">
+                                        <PiecePreview piece={s.next} />
+                                    </div>
+                                    <div className="bg-black p-2 rounded-md border border-slate-600">
+                                        <PiecePreview piece={s.hold} />
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                    <button onClick={() => startGame()} className="flex-1 bg-emerald-500 hover:bg-emerald-600 px-3 py-2 rounded-md font-semibold">
+                                        {started && !gameOver ? "Playing" : "Start"}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setPaused((p) => !p);
+                                        }}
+                                        className="flex-1 bg-yellow-500 hover:bg-yellow-600 px-3 py-2 rounded-md font-semibold"
+                                    >
+                                        {paused ? "Resume" : "Pause"}
+                                    </button>
+                                </div>
+
+                                <div className="mt-3 flex gap-2">
+                                    <button onClick={() => restartGame()} className="flex-1 bg-red-500 hover:bg-red-600 px-3 py-2 rounded-md font-semibold">
+                                        Reset
+                                    </button>
+                                    <button onClick={() => onBtnHold()} className="flex-1 bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-md font-semibold">
+                                        Hold
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div className="text-center p-4 bg-yellow-100 rounded-xl">
-                            <div className="text-xl font-bold text-yellow-600 mb-1">High Score</div>
-                            <div className="text-2xl font-semibold text-gray-700">{highScore.toLocaleString()}</div>
-                        </div>
-                        <div className="text-center p-4 bg-green-100 rounded-xl">
-                            <div className="text-xl font-bold text-green-600 mb-1">Level</div>
-                            <div className="text-2xl font-semibold text-gray-700">{level}</div>
-                        </div>
-                        <div className="text-center p-4 bg-purple-100 rounded-xl">
-                            <div className="text-xl font-bold text-purple-600 mb-1">Lines</div>
-                            <div className="text-2xl font-semibold text-gray-700">{lines}</div>
-                        </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-center">
-                        <h2 className="text-2xl font-bold mb-6 text-center">
-                            {gameOver ? (
-                                <span className="text-red-500">Game Over!</span>
-                            ) : gameStarted ? (
-                                isPaused ? (
-                                    <span className="text-yellow-600">Paused</span>
-                                ) : (
-                                    <span className="text-blue-600">Playing...</span>
-                                )
-                            ) : (
-                                <span className="text-green-600">Ready to Play!</span>
-                            )}
-                        </h2>
-                        
-                        <div className="flex flex-col lg:flex-row items-start gap-6">
-                            {/* Game Canvas */}
+
+                        {/* Center: Game canvas */}
+                        <div className="order-1 lg:order-2 flex flex-col items-center">
                             <div className="relative">
                                 <canvas
                                     ref={canvasRef}
                                     width={CANVAS_WIDTH}
                                     height={CANVAS_HEIGHT}
-                                    className="border-4 border-white/30 rounded-lg shadow-lg bg-black"
+                                    style={{
+                                        imageRendering: "pixelated",
+                                        width: Math.min(480, CANVAS_WIDTH),
+                                        height: Math.min(880, CANVAS_HEIGHT),
+                                        borderRadius: 12,
+                                    }}
+                                    className="shadow-lg border-2 border-slate-700 bg-black"
                                 />
-                                
-                                {/* Game overlay messages */}
-                                {!gameStarted && !gameOver && (
-                                    <div className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center">
-                                        <div className="text-center text-white">
-                                            <h3 className="text-2xl font-bold mb-4">Tetris</h3>
-                                            <p className="mb-4">Arrange falling blocks to clear lines!</p>
-                                            <p className="text-sm">Press SPACE or click Start to begin</p>
+                                {/* Overlays */}
+                                {!started && !gameOver && (
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div className="text-center text-slate-200 bg-black/60 p-4 rounded-md">
+                                            <div className="text-lg font-bold mb-1">Ready</div>
+                                            <div className="text-sm">Press Space or Tap to Start</div>
                                         </div>
                                     </div>
                                 )}
-                                
                                 {gameOver && (
-                                    <div className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center">
-                                        <div className="text-center text-white">
-                                            <h3 className="text-2xl font-bold mb-4 text-red-500">Game Over!</h3>
-                                            <p className="mb-2">Final Score: {score.toLocaleString()}</p>
-                                            <p className="mb-4">Level: {level} | Lines: {lines}</p>
-                                            {score === highScore && score > 0 && (
-                                                <p className="text-yellow-400 font-bold mb-4">New High Score!</p>
-                                            )}
-                                            <p className="text-sm">Press SPACE or click Restart to play again</p>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="text-center p-4 bg-black/80 rounded-md">
+                                            <div className="text-2xl font-bold text-red-400 mb-2">Game Over</div>
+                                            <div className="text-sm mb-2">Score: {score.toLocaleString()}</div>
+                                            <div className="flex gap-2 justify-center">
+                                                <button onClick={() => restartGame()} className="bg-emerald-500 px-3 py-2 rounded-md">
+                                                    Play Again
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        saveHighScore(Math.max(score, loadHighScore()));
+                                                        setHighScore(loadHighScore());
+                                                    }}
+                                                    className="bg-slate-700 px-3 py-2 rounded-md"
+                                                >
+                                                    Save HS
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
-                                
-                                {isPaused && gameStarted && !gameOver && (
-                                    <div className="absolute inset-0 bg-black/80 rounded-lg flex items-center justify-center">
-                                        <div className="text-center text-white">
-                                            <h3 className="text-2xl font-bold mb-4">Paused</h3>
-                                            <p className="text-sm">Press SPACE to resume</p>
+                                {paused && !gameOver && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="text-center p-3 bg-black/70 rounded-md">
+                                            <div className="text-xl font-bold">Paused</div>
+                                            <div className="text-sm">Press P to resume</div>
                                         </div>
                                     </div>
                                 )}
                             </div>
-                            
-                            {/* Next piece preview */}
-                            <div className="text-center">
-                                <h4 className="text-lg font-semibold mb-4 text-white">Next Piece</h4>
-                                <div className="w-24 h-24 bg-black border-2 border-white/30 rounded-lg flex items-center justify-center">
-                                    {gameState.current.nextPiece && (
-                                        <div className="grid gap-px" style={{
-                                            gridTemplateColumns: `repeat(${gameState.current.nextPiece.shape[0].length}, 1fr)`,
-                                            gridTemplateRows: `repeat(${gameState.current.nextPiece.shape.length}, 1fr)`
-                                        }}>
-                                            {gameState.current.nextPiece.shape.map((row, y) =>
-                                                row.map((cell, x) => (
-                                                    <div
-                                                        key={`${x}-${y}`}
-                                                        className="w-3 h-3"
-                                                        style={{
-                                                            backgroundColor: cell ? gameState.current.nextPiece.color : 'transparent'
-                                                        }}
-                                                    />
-                                                ))
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Mobile Controls */}
-                        {isMobile && (
-                            <div className="mt-6 w-full max-w-xs">
+
+                            {/* Mobile dedicated controls */}
+                            <div className="mt-4 w-full lg:hidden">
                                 <div className="grid grid-cols-3 gap-2">
-                                    <div></div>
-                                    <button
-                                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-bold text-xl"
-                                        onClick={() => handleMobileControl('rotate')}
-                                        disabled={!gameStarted || gameOver || isPaused}
-                                    >
-                                        ↻
+                                    <button onClick={onBtnLeft} className="bg-slate-600 p-3 rounded-lg">
+                                        ⬅
                                     </button>
-                                    <div></div>
-                                    <button
-                                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-bold text-xl"
-                                        onClick={() => handleMobileControl('left')}
-                                        disabled={!gameStarted || gameOver || isPaused}
-                                    >
-                                        ←
+                                    <button onClick={onBtnRotate} className="bg-slate-600 p-3 rounded-lg">
+                                        🔁
                                     </button>
-                                    <button
-                                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-bold text-xl"
-                                        onClick={() => handleMobileControl('down')}
-                                        disabled={!gameStarted || gameOver || isPaused}
-                                    >
-                                        ↓
+                                    <button onClick={onBtnRight} className="bg-slate-600 p-3 rounded-lg">
+                                        ➡
                                     </button>
-                                    <button
-                                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-lg font-bold text-xl"
-                                        onClick={() => handleMobileControl('right')}
-                                        disabled={!gameStarted || gameOver || isPaused}
-                                    >
-                                        →
+
+                                    <button onClick={onBtnDown} className="bg-amber-600 p-3 rounded-lg">
+                                        ⬇
+                                    </button>
+                                    <button onClick={onBtnDrop} className="bg-rose-500 p-3 rounded-lg col-span-2">
+                                        ⚡ Drop
                                     </button>
                                 </div>
                             </div>
-                        )}
-                        
-                        {/* Game Controls */}
-                        <div className="flex flex-wrap gap-4 mt-6 justify-center">
-                            {!gameStarted ? (
-                                <button
-                                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-bold"
-                                    onClick={startGame}
-                                >
-                                    Start Game
-                                </button>
-                            ) : (
-                                <>
-                                    <button
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg font-bold"
-                                        onClick={togglePause}
-                                        disabled={gameOver}
-                                    >
-                                        {isPaused ? 'Resume' : 'Pause'}
-                                    </button>
-                                    {gameOver && (
-                                        <button
-                                            className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold"
-                                            onClick={restartGame}
-                                        >
-                                            Restart
-                                        </button>
-                                    )}
-                                </>
-                            )}
                         </div>
-                        
-                        {/* Instructions */}
-                        <div className="mt-6 text-center text-white/90 text-sm max-w-md">
-                            <div className="bg-white/10 backdrop-blur p-4 rounded-xl border border-white/20">
-                                <p className="mb-2">
-                                    <strong>Controls:</strong> {isMobile ? 'Use buttons above' : 'Arrow keys or WASD to move • Up/W: Rotate • Space: Pause'}
-                                </p>
-                                <p className="mb-2">Arrange falling blocks to clear complete horizontal lines!</p>
-                                <p className="text-xs text-white/70">Clear multiple lines at once for bonus points!</p>
+
+                        {/* Right: Controls & Hints */}
+                        <div className="order-3 lg:order-3 flex flex-col gap-4">
+                            <div className="bg-slate-700 p-3 rounded-lg">
+                                <div className="text-xs text-slate-300 mb-2">Controls</div>
+                                <div className="text-sm mb-1">Desktop: ← → move, ↑ rotate, ↓ soft drop, SPACE hard drop, C hold, P pause</div>
+                                <div className="text-sm">Mobile: Tap to rotate, swipe to move, double-tap to hard drop</div>
+                                {showControlsHint && <div className="mt-2 text-xs text-amber-300">Hint: hold ←/→ for continuous movement (DAS)</div>}
+                            </div>
+
+                            <div className="bg-slate-700 p-3 rounded-lg text-center">
+                                <div className="text-xs text-slate-300 mb-1">Progress</div>
+                                <div className="w-full bg-black h-3 rounded-full overflow-hidden border border-slate-600">
+                                    <div
+                                        style={{
+                                            width: `${(lines % 10) * 10}%`,
+                                            height: "100%",
+                                            background: "linear-gradient(90deg,#06b6d4,#7c3aed)",
+                                            transition: "width 300ms linear",
+                                        }}
+                                    />
+                                </div>
+                                <div className="mt-2 text-xs">Next level in {10 - (lines % 10)} lines</div>
+                            </div>
+
+                            <div className="bg-slate-700 p-3 rounded-lg">
+                                <div className="text-xs text-slate-300 mb-2">Accessibility</div>
+                                <div className="text-sm">Canvas uses high-contrast colors and larger cells for visibility</div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </main>
-        </div>
-    )
-}
 
-export default Tetris
+                    {/* Desktop control shortcuts row */}
+                    <div className="mt-4 hidden lg:flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <button onClick={onBtnLeft} className="bg-slate-600 px-3 py-2 rounded-md">
+                                ←
+                            </button>
+                            <button onClick={onBtnRotate} className="bg-slate-600 px-3 py-2 rounded-md">
+                                Rotate
+                            </button>
+                            <button onClick={onBtnRight} className="bg-slate-600 px-3 py-2 rounded-md">
+                                →
+                            </button>
+                            <button onClick={onBtnDown} className="bg-amber-600 px-3 py-2 rounded-md">
+                                Soft
+                            </button>
+                            <button onClick={onBtnDrop} className="bg-rose-500 px-3 py-2 rounded-md">
+                                Hard
+                            </button>
+                        </div>
+
+                        <div className="text-sm text-slate-300">Press Space to Start / Drop — Hold arrows to move</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

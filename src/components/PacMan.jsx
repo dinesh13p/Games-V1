@@ -718,7 +718,7 @@ export default function PacMan() {
                     {gameState === 'waiting' && (
                         <div className="flex gap-4 mb-6">
                             <button
-                                className="btn-primary text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
+                                className="bg-emerald-500 hover:bg-emerald-600 rounded-md text-sm font-semibold transform transition active:scale-95 text-white px-6 py-3"
                                 onClick={startGame}
                                 aria-label="Start the game"
                             >

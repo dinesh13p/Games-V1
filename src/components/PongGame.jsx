@@ -311,35 +311,35 @@ const PongGame = () => {
                         style={{ maxWidth: '100%', height: 'auto', width: '100%' }}
                     />
 
-                    {/* Game Controls */}
-                    <div className="flex gap-4 mb-6">
-                        {!gameStarted ? (
-                            <button 
-                                className="btn-primary text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
-                                onClick={startGame}
-                            >
-                                🎮 Start Game
-                            </button>
-                        ) : (
-                            <>
-                                <button 
-                                    className="btn-secondary text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
-                                    onClick={() => setPaused(!isPaused)}
-                                    disabled={gameOver}
-                                >
-                                    {isPaused ? "▶️ Resume" : "⏸️ Pause"}
-                                </button>
-                                <button 
-                                    className="btn-danger text-white px-6 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105"
-                                    onClick={startGame}
-                                >
-                                    🔄 Restart
-                                </button>
-                            </>
-                        )}
-                    </div>
+                        {/* Game Controls */}
+                                        <div className="flex gap-4 mb-6">
+                                            {!gameStarted ? (
+                                                <button 
+                                                    className="bg-emerald-500 hover:bg-emerald-600 rounded-md text-sm font-semibold transform transition active:scale-95 text-white px-6 py-3"
+                                                    onClick={startGame}
+                                                >
+                                                    🎮 Start Game
+                                                </button>
+                                            ) : (
+                                                <>
+                                                    <button 
+                                                        className="bg-emerald-500 hover:bg-emerald-600 rounded-md text-sm font-semibold transform transition active:scale-95 text-white px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        onClick={() => setPaused(!isPaused)}
+                                                        disabled={gameOver}
+                                                    >
+                                                        {isPaused ? "▶️ Resume" : "⏸️ Pause"}
+                                                    </button>
+                                                    <button 
+                                                        className="bg-emerald-500 hover:bg-emerald-600 rounded-md text-sm font-semibold transform transition active:scale-95 text-white px-6 py-3"
+                                                        onClick={startGame}
+                                                    >
+                                                        🔄 Restart
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
 
-                    {/* Game Status */}
+                                        {/* Game Status */}
                     {gameOver && (
                         <div className="text-center mb-4 game-over bg-red-50 p-6 rounded-xl border-2 border-red-200">
                             <h2 className="text-2xl font-bold text-red-600 mb-2">
