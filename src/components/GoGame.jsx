@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 
 // Board size options (only 9x9)
 const BOARD_SIZES = {
@@ -65,8 +65,6 @@ function getNeighbors(row, col, size) {
     return neighbors;
 }
 
-// Gomoku mode: no groups/captures
-
 // Gomoku: a move is valid if the intersection is empty
 function isValidMove(board, row, col, color) {
     if (board[row][col] !== EMPTY) return { valid: false };
@@ -76,15 +74,10 @@ function isValidMove(board, row, col, color) {
 }
 
 // ======= Stronger Gomoku AI Engine =======
-// Made improvements:
-// - Corrected evaluation functions to work for either color
-// - Better pattern scoring (open-four, closed-four, open-three double threats)
-// - Root move ordering by heuristic evaluation
-// - Increased defaults for stronger play (adjustable)
 
-const MAX_DEPTH_DEFAULT = 3; // Significantly reduced depth for instant responses
-const SEARCH_TIME_MARGIN_MS = 20; // Minimal margin for fastest responses
-let CANDIDATE_RANGE = 2; // Default range for move consideration
+const MAX_DEPTH_DEFAULT = 3;
+const SEARCH_TIME_MARGIN_MS = 20;
+let CANDIDATE_RANGE = 2;
 
 // ---------- Zobrist hashing ----------
 function initZobrist(size) {
@@ -95,7 +88,6 @@ function initZobrist(size) {
     return zobrist;
 }
 function rand32() {
-    // 32-bit random
     return Math.floor(Math.random() * 0xFFFFFFFF) >>> 0;
 }
 function computeHash(board, zobrist) {
@@ -139,7 +131,6 @@ function generateCandidates(board) {
     for (let r = 0; r < size; r++) {
         for (let c = 0; c < size; c++) {
             if (board[r][c] !== EMPTY) {
-                // mark neighbors in range
                 for (let dr = -CANDIDATE_RANGE; dr <= CANDIDATE_RANGE; dr++) {
                     for (let dc = -CANDIDATE_RANGE; dc <= CANDIDATE_RANGE; dc++) {
                         const nr = r + dr, nc = c + dc;
@@ -155,7 +146,6 @@ function generateCandidates(board) {
             }
         }
     }
-    // if board empty (first move), add center
     if (candidates.length === 0) {
         const mid = Math.floor(size / 2);
         return [{ row: mid, col: mid }];
@@ -188,15 +178,11 @@ function findImmediateOpponentThreat(board, opponentColor) {
 }
 
 // ---------- Improved evaluation ----------
-// Pattern scoring helpers now take a color parameter so they work for either player
-
 function scorePattern(pattern, color) {
-    // pattern is length 9 window with center at index 4
     const center = pattern[4];
-    if (center !== EMPTY) return 0; // must be empty for this candidate-based scoring
+    if (center !== EMPTY) return 0;
 
     let score = 0;
-    // examine all 5-length slices
     for (let i = 0; i <= 4; i++) {
         const slice = pattern.slice(i, i + 5);
         if (slice.length < 5) continue;
@@ -205,56 +191,51 @@ function scorePattern(pattern, color) {
         const emptyCount = slice.filter(p => p === EMPTY).length;
 
         if (oppCount > 0) {
-            // Consider blocking value even when opponent stones present
             if (oppCount === 4 && emptyCount === 1) {
-                score += 90000; // Critical block needed
+                score += 90000;
             } else if (oppCount === 3 && emptyCount === 2) {
-                score += 3500; // Important block
+                score += 3500;
             }
             continue;
         }
 
         if (ourCount === 4 && emptyCount === 1) {
-            // Check if it's an open-4 (both ends open)
             const startIdx = i;
             const endIdx = i + 4;
             const hasOpenStart = startIdx > 0 && pattern[startIdx - 1] === EMPTY;
             const hasOpenEnd = endIdx < pattern.length - 1 && pattern[endIdx + 1] === EMPTY;
             if (hasOpenStart || hasOpenEnd) {
-                score += 150000; // Open-4 is highest priority
+                score += 150000;
             } else {
-                score += 100000; // Closed-4 still very strong
+                score += 100000;
             }
         } else if (ourCount === 3 && emptyCount === 2) {
-            // Check for open-3
             const startIdx = i;
             const endIdx = i + 4;
             const hasOpenStart = startIdx > 0 && pattern[startIdx - 1] === EMPTY;
             const hasOpenEnd = endIdx < pattern.length - 1 && pattern[endIdx + 1] === EMPTY;
             if (hasOpenStart && hasOpenEnd) {
-                score += 8000; // Open-3 is very dangerous
+                score += 8000;
             } else {
-                score += 4000; // Closed-3 still strong
+                score += 4000;
             }
         } else if (ourCount === 2 && emptyCount === 3) {
-            // Check for open-2
             const startIdx = i;
             const endIdx = i + 4;
             const hasOpenStart = startIdx > 0 && pattern[startIdx - 1] === EMPTY;
             const hasOpenEnd = endIdx < pattern.length - 1 && pattern[endIdx + 1] === EMPTY;
             if (hasOpenStart && hasOpenEnd) {
-                score += 800; // Open-2 has good potential
+                score += 800;
             } else {
-                score += 400; // Closed-2 still worth considering
+                score += 400;
             }
         } else if (ourCount === 1 && emptyCount === 4) {
             score += 40;
         }
     }
 
-    // Additional bonuses for adjacent friendly stones
     const adjacentCount = pattern.slice(3, 6).filter(p => p === color).length;
-    score += adjacentCount * 15; // Higher bonus for immediately adjacent stones
+    score += adjacentCount * 15;
 
     return score;
 }
@@ -262,19 +243,17 @@ function scorePattern(pattern, color) {
 function getPattern(board, row, col, dr, dc) {
     const size = board.length;
     const pattern = [];
-    // Get 9 positions in the line (4 before, center, 4 after)
     for (let i = -4; i <= 4; i++) {
         const r = row + i * dr;
         const c = col + i * dc;
         if (r >= 0 && r < size && c >= 0 && c < size) {
             pattern.push(board[r][c]);
         } else {
-            pattern.push(-1); // out of bounds mark
+            pattern.push(-1);
         }
     }
-    // Replace out-of-bounds (-1) with opponent marker so slices crossing border count as blocked
     for (let i = 0; i < pattern.length; i++) {
-        if (pattern[i] === -1) pattern[i] = -9; // unique marker
+        if (pattern[i] === -1) pattern[i] = -9;
     }
     return pattern;
 }
@@ -317,7 +296,6 @@ function evaluateStrategicPosition(board, row, col, size, color) {
     }
     score += nearbyStones * 8;
 
-    // Prefer positions that create multiple threat directions
     const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
     let threatDirs = 0;
     for (const [dr, dc] of directions) {
@@ -336,14 +314,12 @@ function evaluatePosition(board, row, col, color) {
     const result = isValidMove(board, row, col, color);
     score += result.captured.length * 100;
 
-    // Pattern and threat evaluation
     score += evaluatePatterns(board, row, col, color);
     score += evaluateThreats(board, row, col, color) * 0.8;
-    score += evaluateThreats(board, row, col, opponentColor) * 0.6; // blocking opponent matters too
+    score += evaluateThreats(board, row, col, opponentColor) * 0.6;
 
     score += evaluateStrategicPosition(board, row, col, size, color);
 
-    // Center control bonus (small)
     const centerDistance = Math.abs(row - (size - 1) / 2) + Math.abs(col - (size - 1) / 2);
     score += Math.max(0, (size - centerDistance)) * 6;
 
@@ -382,7 +358,7 @@ function evaluateBoard(board, color) {
     return score;
 }
 
-// ---------- Quiescence: resolve immediate wins/blocks ----------
+// ---------- Quiescence ----------
 function quiescence(board, color, alpha, beta) {
     const winMove = findImmediateWinningMove(board, color);
     if (winMove) return 1000000;
@@ -395,39 +371,38 @@ function negamaxNode(board, color, depth, alpha, beta, startTime, timeLimitMs, z
     const opponent = color === BLACK ? WHITE : BLACK;
     const alphaOrig = alpha;
 
-    const inner = (board, color, depth, alpha, beta) => {
+    const inner = (boardInner, colorInner, depthInner, alphaInner, betaInner) => {
         if (performance.now() - startTime > timeLimitMs - SEARCH_TIME_MARGIN_MS) return null;
 
-        const hash = computeHash(board, zobrist);
+        const hash = computeHash(boardInner, zobrist);
         const ttEntry = tt.get(hash);
-        if (ttEntry && ttEntry.depth >= depth) {
+        if (ttEntry && ttEntry.depth >= depthInner) {
             if (ttEntry.flag === 'EXACT') return ttEntry.value;
-            if (ttEntry.flag === 'LOWER') alpha = Math.max(alpha, ttEntry.value);
-            if (ttEntry.flag === 'UPPER') beta = Math.min(beta, ttEntry.value);
-            if (alpha >= beta) return ttEntry.value;
+            if (ttEntry.flag === 'LOWER') alphaInner = Math.max(alphaInner, ttEntry.value);
+            if (ttEntry.flag === 'UPPER') betaInner = Math.min(betaInner, ttEntry.value);
+            if (alphaInner >= betaInner) return ttEntry.value;
         }
 
-        if (depth === 0) return quiescence(board, color, alpha, beta);
+        if (depthInner === 0) return quiescence(boardInner, colorInner, alphaInner, betaInner);
 
-        let moves = generateCandidates(board);
-        // Order root-level moves by heuristic
+        let moves = generateCandidates(boardInner);
         moves.sort((a, b) => {
-            const sa = evaluatePosition(board, a.row, a.col, color);
-            const sb = evaluatePosition(board, b.row, b.col, color);
+            const sa = evaluatePosition(boardInner, a.row, a.col, colorInner);
+            const sb = evaluatePosition(boardInner, b.row, b.col, colorInner);
             return sb - sa;
         });
 
         const winning = [], blocking = [], rest = [];
         for (const m of moves) {
             const { row, col } = m;
-            if (board[row][col] !== EMPTY) continue;
-            board[row][col] = color;
-            const win = checkWin(board, row, col, color);
-            board[row][col] = EMPTY;
+            if (boardInner[row][col] !== EMPTY) continue;
+            boardInner[row][col] = colorInner;
+            const win = checkWin(boardInner, row, col, colorInner);
+            boardInner[row][col] = EMPTY;
             if (win) { winning.push(m); continue; }
-            board[row][col] = opponent;
-            const oppWin = checkWin(board, row, col, opponent);
-            board[row][col] = EMPTY;
+            boardInner[row][col] = (colorInner === BLACK ? WHITE : BLACK);
+            const oppWin = checkWin(boardInner, row, col, (colorInner === BLACK ? WHITE : BLACK));
+            boardInner[row][col] = EMPTY;
             if (oppWin) { blocking.push(m); continue; }
             rest.push(m);
         }
@@ -438,22 +413,22 @@ function negamaxNode(board, color, depth, alpha, beta, startTime, timeLimitMs, z
         let best = -Infinity;
         for (const m of moves) {
             const { row, col } = m;
-            if (board[row][col] !== EMPTY) continue;
-            applyMove(board, row, col, color, undoStack);
-            const val = inner(board, color === BLACK ? WHITE : BLACK, depth - 1, -beta, -alpha);
-            undoMove(board, undoStack);
+            if (boardInner[row][col] !== EMPTY) continue;
+            applyMove(boardInner, row, col, colorInner, undoStack);
+            const val = inner(boardInner, colorInner === BLACK ? WHITE : BLACK, depthInner - 1, -betaInner, -alphaInner);
+            undoMove(boardInner, undoStack);
             if (val === null) return null;
             const score = -val;
             if (score > best) best = score;
-            alpha = Math.max(alpha, score);
-            if (alpha >= beta) {
-                HISTORY[`${row},${col}`] = (HISTORY[`${row},${col}`] || 0) + (1 << depth);
+            alphaInner = Math.max(alphaInner, score);
+            if (alphaInner >= betaInner) {
+                HISTORY[`${row},${col}`] = (HISTORY[`${row},${col}`] || 0) + (1 << depthInner);
                 break;
             }
         }
 
-        const flag = (best <= alphaOrig) ? 'UPPER' : (best >= beta ? 'LOWER' : 'EXACT');
-        tt.set(hash, { value: best === -Infinity ? 0 : best, depth, flag });
+        const flag = (best <= alphaOrig) ? 'UPPER' : (best >= betaInner ? 'LOWER' : 'EXACT');
+        tt.set(hash, { value: best === -Infinity ? 0 : best, depth: depthInner, flag });
         return best === -Infinity ? 0 : best;
     };
 
@@ -468,7 +443,6 @@ function getAIMove(board, color, timeLimitMs = 2000) {
     }
     const zobrist = getAIMove.zobrist;
 
-    // Immediate tactical checks
     const immediateWin = findImmediateWinningMove(board, color);
     if (immediateWin) return immediateWin;
     const opponent = color === BLACK ? WHITE : BLACK;
@@ -481,11 +455,9 @@ function getAIMove(board, color, timeLimitMs = 2000) {
     let undoStack = [];
     tt.clear();
 
-    // generate candidates once and order by heuristic (top N)
     let candidates = generateCandidates(board);
     candidates = candidates.map(m => ({ ...m, score: evaluatePosition(board, m.row, m.col, color) }));
     candidates.sort((a, b) => b.score - a.score);
-    // keep only top 8 candidates for immediate response
     const TOPK = Math.min(8, candidates.length);
     candidates = candidates.slice(0, TOPK);
 
@@ -501,7 +473,7 @@ function getAIMove(board, color, timeLimitMs = 2000) {
             applyMove(board, row, col, color, undoStack);
             const val = negamaxNode(board, opponent, depth - 1, -Infinity, Infinity, startTime, timeLimitMs, zobrist, undoStack);
             undoMove(board, undoStack);
-            if (val === null) break; // time up
+            if (val === null) break;
             const score = -val;
             if (score > localBestScore) {
                 localBestScore = score;
@@ -526,7 +498,7 @@ function getAIMove(board, color, timeLimitMs = 2000) {
 
 export default function GoGame() {
     const [boardSize, setBoardSize] = useState("9x9");
-    const [gameMode, setGameMode] = useState(null); // null -> choose mode, 'pvp' or 'pvc'
+    const [gameMode, setGameMode] = useState(null);
     const [board, setBoard] = useState(() => createBoard(BOARD_SIZES[boardSize]));
     const [currentPlayer, setCurrentPlayer] = useState(BLACK);
     const [gameOver, setGameOver] = useState(false);
@@ -535,8 +507,8 @@ export default function GoGame() {
     const [capturedStones, setCapturedStones] = useState({ black: 0, white: 0 });
     const [isThinking, setIsThinking] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const aiProcessingRef = useRef(false);
 
-    // Check if mobile
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 768);
@@ -546,7 +518,6 @@ export default function GoGame() {
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    // Reset game when settings change
     useEffect(() => {
         const size = BOARD_SIZES[boardSize];
         setBoard(createBoard(size));
@@ -555,6 +526,8 @@ export default function GoGame() {
         setPasses(0);
         setMoveHistory([]);
         setCapturedStones({ black: 0, white: 0 });
+        setIsThinking(false);
+        aiProcessingRef.current = false;
     }, [boardSize, gameMode]);
 
     const territory = useMemo(() => {
@@ -572,29 +545,38 @@ export default function GoGame() {
         setGameMode(null);
     }
 
-    // Internal move applier used by both human and AI (does not check isThinking)
-    const applyMoveImmediate = useCallback((row, col, color) => {
-        const result = isValidMove(board, row, col, color);
-        if (!result.valid) return false;
-        const newBoard = copyBoard(board);
-        newBoard[row][col] = color;
-        setBoard(newBoard);
+    const makeMove = useCallback((row, col, color) => {
+        setBoard(prevBoard => {
+            if (prevBoard[row][col] !== EMPTY) {
+                return prevBoard;
+            }
+            const newBoard = copyBoard(prevBoard);
+            newBoard[row][col] = color;
+            return newBoard;
+        });
+
         setMoveHistory(prev => [...prev, { row, col, color }]);
         setPasses(0);
-        if (checkWin(newBoard, row, col, color)) {
-            setGameOver(true);
-            return true;
-        }
+
+        setBoard(prevBoard => {
+            const win = checkWin(prevBoard, row, col, color);
+            if (win) {
+                setGameOver(true);
+            }
+            return prevBoard;
+        });
+
         setCurrentPlayer(color === BLACK ? WHITE : BLACK);
-        return true;
-    }, [board]);
+    }, []);
 
     const handleCellClick = useCallback((row, col) => {
         if (gameOver) return;
-        if (gameMode === "pvc" && currentPlayer === WHITE) return; // AI's turn
+        if (gameMode === "pvc" && currentPlayer === WHITE) return;
         if (isThinking) return;
-        applyMoveImmediate(row, col, currentPlayer);
-    }, [applyMoveImmediate, currentPlayer, gameMode, gameOver, isThinking]);
+        if (board[row][col] !== EMPTY) return;
+        
+        makeMove(row, col, currentPlayer);
+    }, [makeMove, currentPlayer, gameMode, gameOver, isThinking, board]);
 
     const handlePass = useCallback(() => {
         if (gameOver || isThinking) return;
@@ -610,36 +592,40 @@ export default function GoGame() {
         }
     }, [passes, currentPlayer, gameOver, gameMode, isThinking]);
 
-    // AI move (synchronous, safe against re-entry)
+    // AI move effect
     useEffect(() => {
-        if (gameMode !== "pvc" || currentPlayer !== WHITE || gameOver || isThinking) return;
+        if (gameMode !== "pvc" || currentPlayer !== WHITE || gameOver || aiProcessingRef.current) {
+            return;
+        }
 
-        // Use setTimeout to prevent UI blocking
+        aiProcessingRef.current = true;
+        setIsThinking(true);
+
         const timeoutId = setTimeout(() => {
-            setIsThinking(true);
             try {
-                // Fixed very fast time limit for immediate responses
-                const timeLimitMs = 200; // Constant fast response time
-                
-                // Keep search space small for quick responses
-                CANDIDATE_RANGE = 2; // Fixed small search range
-                
-                const aiMove = getAIMove(board, WHITE, timeLimitMs);
-                if (aiMove) {
-                    // Bypass isThinking guard
-                    applyMoveImmediate(aiMove.row, aiMove.col, WHITE);
+                const timeLimitMs = 2000;
+                CANDIDATE_RANGE = 2;
+
+                const boardSnapshot = copyBoard(board);
+                const aiMove = getAIMove(boardSnapshot, WHITE, timeLimitMs);
+
+                if (aiMove && board[aiMove.row][aiMove.col] === EMPTY) {
+                    makeMove(aiMove.row, aiMove.col, WHITE);
                 } else {
                     handlePass();
                 }
             } catch (e) {
-                console.error('AI error:', e);
+                console.error("AI error:", e);
             } finally {
-                setIsThinking(false);
+                setTimeout(() => {
+                    setIsThinking(false);
+                    aiProcessingRef.current = false;
+                }, 100);
             }
-        }, 10); // tiny delay to let UI update
+        }, 200);
 
         return () => clearTimeout(timeoutId);
-    }, [board, currentPlayer, gameMode, gameOver, isThinking, applyMoveImmediate, handlePass]);
+    }, [board, currentPlayer, gameMode, gameOver, makeMove, handlePass]);
 
     const handleReset = () => {
         const size = BOARD_SIZES[boardSize];
@@ -649,6 +635,8 @@ export default function GoGame() {
         setPasses(0);
         setMoveHistory([]);
         setCapturedStones({ black: 0, white: 0 });
+        setIsThinking(false);
+        aiProcessingRef.current = false;
     };
 
     const handleUndo = () => {
@@ -657,12 +645,10 @@ export default function GoGame() {
         const newHistory = [...moveHistory];
         const lastMove = newHistory.pop();
 
-        // If playing against AI and last move was AI's, undo one more
         if (gameMode === "pvc" && lastMove.color === WHITE && newHistory.length > 0) {
             newHistory.pop();
         }
 
-        // Rebuild board from history
         const size = BOARD_SIZES[boardSize];
         const newBoard = createBoard(size);
         const newCaptured = { black: 0, white: 0 };
@@ -679,6 +665,7 @@ export default function GoGame() {
         setCapturedStones(newCaptured);
         setCurrentPlayer(newHistory.length % 2 === 0 ? BLACK : WHITE);
         setPasses(0);
+        aiProcessingRef.current = false;
     };
 
     const size = BOARD_SIZES[boardSize];
@@ -739,7 +726,7 @@ export default function GoGame() {
             <main className="flex items-center justify-center p-6">
                 <div className="game-board p-8 rounded-2xl max-w-7xl w-full bg-gray-800 border border-gray-700">
                     <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-3xl font-bold text-white">⚫⚪ Go Game</h1>
+                        <h1 className="text-3xl font-bold text-black">⚫⚪ Go Game</h1>
                         <div className="flex gap-2">
                             <button
                                 onClick={handleUndo}
@@ -774,12 +761,12 @@ export default function GoGame() {
                         <h2 className="text-2xl font-bold mb-6 text-center">
                             {gameOver ? (
                                 <span className="text-green-400">
-                                    🎉 Game Over! {currentPlayer === BLACK ? "⚫ Black" : "⚪ White"} Wins!
+                                    🎉 Game Over! {currentPlayer === BLACK ? "⚪ White" : "⚫ Black"} Wins!
                                 </span>
                             ) : isThinking ? (
                                 <span className="text-yellow-400">⚡ AI Computing...</span>
                             ) : (
-                                <span className={currentPlayer === BLACK ? "text-gray-300" : "text-gray-100"}>
+                                <span className={currentPlayer === BLACK ? "text-black" : "text-black"}>
                                     {currentPlayer === BLACK ? "⚫ Black's" : "⚪ White's"} Turn
                                     {passes === 1 && <span className="text-sm text-yellow-400 ml-2">(1 Pass)</span>}
                                 </span>
@@ -819,18 +806,18 @@ export default function GoGame() {
                                             </div>
 
                                             {((size === 9 && ((r === 2 || r === 6) && (c === 2 || c === 6)) || (r === 4 && c === 4))) && (
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-black opacity-40"></div>
-                                                    </div>
-                                                )}
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-black opacity-40"></div>
+                                                </div>
+                                            )}
 
                                             {cell !== EMPTY && (
                                                 <div className="absolute inset-0 flex items-center justify-center z-10">
                                                     <div
                                                         className={`rounded-full shadow-lg ${cell === BLACK
-                                                                ? "bg-gray-900 border-2 border-gray-700"
-                                                                : "bg-white border-2 border-gray-200"
-                                                            }`}
+                                                            ? "bg-gray-900 border-2 border-gray-700"
+                                                            : "bg-white border-2 border-gray-200"
+                                                        }`}
                                                         style={{ width: cellSize * 0.85, height: cellSize * 0.85 }}
                                                     ></div>
                                                 </div>

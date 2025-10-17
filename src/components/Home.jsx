@@ -15,12 +15,12 @@ const Home = () => {
 		{ id: 'flappybird', title: 'Flappy Bird', emoji: '🐦', description: 'Navigate through pipes by tapping to flap your wings!', path: '/flappybird', category: 'Arcade', difficulty: 'Medium', isFeatured: true },
 		{ id: 'frogger', title: 'Frogger', emoji: '🐸', description: 'Help the frog cross the road and river safely!', path: '/frogger', category: 'Classic', difficulty: 'Medium', isFeatured: false },
 		{ id: 'archery', title: 'Archery Game', emoji: '🏹', description: 'Test your precision in this archery challenge!', path: '/archery', category: 'Sports', difficulty: 'Medium', isFeatured: false },
-		{ id: 'pacman', title: 'Pac-Man', emoji: '👻', description: 'Navigate the maze, eat pellets, and avoid ghosts! | DESKTOP ONLY', path: '/pacman', category: 'Arcade', difficulty: 'Medium', isFeatured: false },
 		{ id: 'tetris', title: 'Tetris', emoji: '🟦', description: 'Classic puzzle game. Fit the falling blocks into complete lines!', path: '/tetris', category: 'Puzzle', difficulty: 'Medium', isFeatured: true },
+		{ id: 'go', title: 'Go Game', emoji: '⚫️⚪️', description: 'Ancient strategy game (Gomoku Style). Get five in a row to win!', path: '/go', category: 'Strategy', difficulty: 'Medium', isFeatured: false },
+		{ id: 'pacman', title: 'Pac-Man', emoji: '👻', description: 'Navigate the maze, eat pellets, and avoid ghosts! | DESKTOP ONLY', path: '/pacman', category: 'Arcade', difficulty: 'Medium', isFeatured: false },
 		
 		// Hard Games (Advanced)
 		{ id: 'doodlejump', title: 'Doodle Jump', emoji: '🦘', description: 'Jump from platform to platform and avoid falling!', path: '/doodlejump', category: 'Platform', difficulty: 'Hard', isFeatured: false },
-		{ id: 'go', title: 'Go Game', emoji: '⚫️⚪️', description: 'Ancient strategy game. Get five in a row to win!', path: '/go', category: 'Strategy', difficulty: 'Hard', isFeatured: false },
 		{ id: 'baghchal', title: 'Bagh Chal', emoji: '🐯🐐', description: 'Ancient Nepali strategy game. Tigers vs Goats!', path: '/baghchal', category: 'Strategy', difficulty: 'Hard', isFeatured: false },
 		{ id: 'minesweeper', title: 'Minesweeper', emoji: '💣', description: 'Uncover all safe tiles without detonating a mine!', path: '/minesweeper', category: 'Puzzle', difficulty: 'Hard', isFeatured: false },
 		{ id: 'spaceinvaders', title: 'Space Invaders', emoji: '🚀', description: 'Defend Earth from alien invasion. Shoot to survive! | DESKTOP ONLY', path: '/spaceinvaders', category: 'Action', difficulty: 'Hard', isFeatured: true },
@@ -143,7 +143,7 @@ const Home = () => {
 							{filteredGames.map((game) => (
 								<div key={game.id} className="group relative bg-gray-800 rounded-2xl p-6 transition-all duration-300 border border-gray-700 hover:border-purple-500/50 hover:shadow-xl hover:shadow-purple-500/10">
 									<div className="mb-4 flex items-center justify-between">
-										<div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl grid place-items-center text-2xl group-hover:scale-110 transition-transform duration-300">{game.emoji}</div>
+										<div className="w-16 h-16 bg-gradient-to-br from-gray-500 to-gray-200 rounded-2xl grid place-items-center text-2xl group-hover:scale-110 transition-transform duration-300">{game.emoji}</div>
 										{game.isNew && <span className="text-xs px-2 py-1 rounded-md bg-green-500/20 text-green-400 border border-green-500/30">NEW</span>}
 									</div>
 									<div className="space-y-3">
