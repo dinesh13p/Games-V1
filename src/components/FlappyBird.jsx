@@ -2,6 +2,13 @@ import React, { useRef, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 
 export default function FlappyBird() {
+    // Sound effects
+    const sounds = {
+        die: new Audio('/FlappyBird/die.mp3'),
+        hit: new Audio('/FlappyBird/hit.mp3'),
+        point: new Audio('/FlappyBird/point.mp3'),
+        whoosh: new Audio('/FlappyBird/whoosh.mp3')
+    };
     const navigate = useNavigate();
     const canvasRef = useRef(null);
     const rafRef = useRef(null);
@@ -20,6 +27,8 @@ export default function FlappyBird() {
         }
     });
     const [state, setState] = useState("ready");
+    const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isGameWon, setIsGameWon] = useState(false);
 
     const GRAVITY = 1400;
     const FLAP_VELOCITY = -380;
@@ -39,6 +48,36 @@ export default function FlappyBird() {
         vy: 0,
         rotation: 0,
     });
+
+    // Function to determine if a pipe's gap should move based on its number
+    const shouldPipeMove = (pipeNumber) => {
+        // Pillar 100: Doesn't move, centered
+        if (pipeNumber === 100) return false;
+        
+        // Pillars 76-99: All move
+        if (pipeNumber >= 76 && pipeNumber <= 99) return true;
+        
+        // Pillars 66-75: All move (dark mode)
+        if (pipeNumber >= 66 && pipeNumber <= 75) return true;
+        
+        // Pillars 51-65: Even moves, odd doesn't (dark mode)
+        if (pipeNumber >= 51 && pipeNumber <= 65) {
+            return pipeNumber % 2 === 0;
+        }
+        
+        // Pillars 36-50: Even moves, odd doesn't
+        if (pipeNumber >= 36 && pipeNumber <= 50) {
+            return pipeNumber % 2 === 0;
+        }
+        
+        // Pillars 21-35: Specific pipes move
+        if (pipeNumber >= 21 && pipeNumber <= 35) {
+            return [21, 24, 27, 30, 33].includes(pipeNumber);
+        }
+        
+        // Pillars 1-20: No movement
+        return false;
+    };
     const spawnTimerRef = useRef(0);
     const passedPipeIndexRef = useRef(0);
     const scoreRef = useRef(0);
@@ -67,19 +106,21 @@ export default function FlappyBird() {
     }, [width, height]);
 
     useEffect(() => {
-        const flap = () => {
-            if (state === "ready") {
-                startGame();
+    const flap = () => {
+        if (state === "ready") {
+            startGame();
+        }
+        if (state === "playing") {
+            birdRef.current.vy = FLAP_VELOCITY;
+            playWhooshSound();
+        }
+        if (state === "over") {
+            if (isGameWon) {
+                setIsGameWon(false);
             }
-            if (state === "playing") {
-                birdRef.current.vy = FLAP_VELOCITY;
-            }
-            if (state === "over") {
-                restartGame();
-            }
-        };
-
-        const onKey = (e) => {
+            restartGame();
+        }
+    };        const onKey = (e) => {
             if (e.code === "Space" || e.key === " " || e.code === "ArrowUp") {
                 e.preventDefault();
                 flap();
@@ -93,13 +134,39 @@ export default function FlappyBird() {
             flap();
         };
 
-        const onCanvasTouch = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            flap();
-        };
+    const onCanvasTouch = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        flap();
+    };
 
-        window.addEventListener("keydown", onKey);
+    // Play whoosh sound when flapping
+    const playWhooshSound = () => {
+        const whooshSound = sounds.whoosh.cloneNode();
+        whooshSound.volume = 0.5;
+        whooshSound.play().catch(() => {});
+    };
+
+    // Play point sound when passing pipe
+    const playPointSound = () => {
+        const pointSound = sounds.point.cloneNode();
+        pointSound.volume = 0.5;
+        pointSound.play().catch(() => {});
+    };
+
+    // Play hit sound when colliding with pipe
+    const playHitSound = () => {
+        const hitSound = sounds.hit.cloneNode();
+        hitSound.volume = 0.5;
+        hitSound.play().catch(() => {});
+    };
+
+    // Play die sound when hitting ground
+    const playDieSound = () => {
+        const dieSound = sounds.die.cloneNode();
+        dieSound.volume = 0.5;
+        dieSound.play().catch(() => {});
+    };        window.addEventListener("keydown", onKey);
         
         // Add event listeners only to the canvas
         const canvas = canvasRef.current;
@@ -198,17 +265,53 @@ export default function FlappyBird() {
         const x = width + 40;
         const minY = PIPE_MIN_GAP_Y;
         const maxY = height - GROUND_HEIGHT - PIPE_GAP - 40;
-        const gapY = randRange(minY, maxY);
         pipeCountRef.current += 1;
-        
+        const currentPipeNumber = pipeCountRef.current;
+
+        // Handle dark mode transitions
+        if (currentPipeNumber === 51) {
+            setIsDarkMode(true);
+        } else if (currentPipeNumber === 76) {
+            setIsDarkMode(false);
+        }
+
+        // Stop spawning after pipe 100
+        if (currentPipeNumber > 100) {
+            return null;
+        }
+
+        // Special handling for 100th pipe (golden pipe)
+        if (currentPipeNumber === 100) {
+            const centerY = height / 2;
+            return {
+                x,
+                gapY: centerY,
+                originalGapY: centerY,
+                pipeNumber: currentPipeNumber,
+                movingGap: false,
+                gapDirection: 1,
+                gapSpeed: 80,
+                isGolden: true,
+                isLastPipe: true,
+                passed: false
+            };
+        }
+
+        // Regular pipes
+        const gapY = randRange(minY, maxY);
+        const shouldMove = shouldPipeMove(currentPipeNumber);
+
         return { 
             x, 
             gapY: gapY,
             originalGapY: gapY,
-            pipeNumber: pipeCountRef.current,
-            movingGap: shouldGapMove(pipeCountRef.current),
+            pipeNumber: currentPipeNumber,
+            movingGap: shouldMove,
             gapDirection: 1,
-            gapSpeed: 80
+            gapSpeed: shouldMove ? 80 : 0,
+            isGolden: false,
+            isLastPipe: false,
+            passed: false
         };
     }
 
@@ -257,14 +360,38 @@ export default function FlappyBird() {
 
         function drawBackground(ctx, t) {
             const g = ctx.createLinearGradient(0, 0, 0, height);
-            g.addColorStop(0, "#87CEEB");
-            g.addColorStop(1, "#E0F6FF");
+            if (isDarkMode) {
+                g.addColorStop(0, "#1A202C");
+                g.addColorStop(1, "#2D3748");
+            } else {
+                g.addColorStop(0, "#87CEEB");
+                g.addColorStop(1, "#E0F6FF");
+            }
             ctx.fillStyle = g;
             ctx.fillRect(0, 0, width, height);
 
-            for (let i = 0; i < 3; i++) {
-                const cx = ((t * 0.02) + i * 210) % (width + 120) - 60;
-                drawCloud(ctx, cx, 70 + i * 30, 0.9 + i * 0.2);
+            // Draw moon/sun
+            ctx.fillStyle = isDarkMode ? "#E2E8F0" : "#FFD700";
+            ctx.beginPath();
+            ctx.arc(80, 80, isDarkMode ? 25 : 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw stars in dark mode or clouds in light mode
+            if (isDarkMode) {
+                ctx.fillStyle = "#FFFFFF";
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.sin(t * 0.001 + i * 0.5) * 3 + (i * 37) % width;
+                    const y = Math.cos(t * 0.001 + i * 0.5) * 3 + (i * 39) % (height - 200);
+                    const size = Math.sin(t * 0.003 + i) * 0.5 + 1;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                for (let i = 0; i < 3; i++) {
+                    const cx = ((t * 0.02) + i * 210) % (width + 120) - 60;
+                    drawCloud(ctx, cx, 70 + i * 30, 0.9 + i * 0.2);
+                }
             }
         }
 
@@ -284,30 +411,74 @@ export default function FlappyBird() {
         }
 
         function drawGround(ctx) {
-            ctx.fillStyle = "#8B7355";
+            // Ground color based on dark mode
+            ctx.fillStyle = isDarkMode ? "#4A5568" : "#8B7355";
             ctx.fillRect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT);
-            ctx.fillStyle = "rgba(0,0,0,0.1)";
+
+            // Ground pattern
+            ctx.fillStyle = isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
             for (let x = 0; x < width; x += 20) {
                 ctx.fillRect(x, height - GROUND_HEIGHT + 50, 12, 6);
             }
+
+            // Add a subtle gradient overlay
+            const gradient = ctx.createLinearGradient(0, height - GROUND_HEIGHT, 0, height);
+            if (isDarkMode) {
+                gradient.addColorStop(0, "rgba(74, 85, 104, 0.8)");
+                gradient.addColorStop(1, "rgba(45, 55, 72, 0.8)");
+            } else {
+                gradient.addColorStop(0, "rgba(139, 115, 85, 0.8)");
+                gradient.addColorStop(1, "rgba(119, 95, 65, 0.8)");
+            }
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, height - GROUND_HEIGHT, width, GROUND_HEIGHT);
         }
 
         function drawPipes(ctx, pipes) {
             for (let pipe of pipes) {
                 const rx = pipe.x;
                 const gapY = pipe.gapY;
-                drawPipeRect(ctx, rx, 0, PIPE_WIDTH, gapY, true);
-                drawPipeRect(ctx, rx, gapY + PIPE_GAP, PIPE_WIDTH, height - GROUND_HEIGHT - (gapY + PIPE_GAP), false);
+                drawPipeRect(ctx, rx, 0, PIPE_WIDTH, gapY, true, pipe.isGolden);
+                drawPipeRect(ctx, rx, gapY + PIPE_GAP, PIPE_WIDTH, height - GROUND_HEIGHT - (gapY + PIPE_GAP), false, pipe.isGolden);
             }
         }
 
-        function drawPipeRect(ctx, x, y, w, h, flip = false) {
+        function drawPipeRect(ctx, x, y, w, h, flip = false, isGolden = false) {
             ctx.save();
-            ctx.fillStyle = "#4CAF50";
+            
+            if (isGolden) {
+                // Golden pipe (100th pipe)
+                const gradient = ctx.createLinearGradient(x, y, x + w, y + h);
+                gradient.addColorStop(0, '#FFD700');
+                gradient.addColorStop(1, '#FFA500');
+                ctx.fillStyle = gradient;
+
+                // Add sparkle effect
+                ctx.fillStyle = '#FFFFFF';
+                ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 200) * 0.4;
+                ctx.beginPath();
+                ctx.arc(x + w/2, y + h/2, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            } else {
+                // Normal pipes - same color in both modes
+                ctx.fillStyle = "#4CAF50";
+            }
+            
             ctx.fillRect(x, y, w, h);
+            
+            // Add shading
             ctx.fillStyle = "rgba(0,0,0,0.15)";
             ctx.fillRect(x + w - 8, y, 8, h);
-            ctx.fillStyle = "#388E3C";
+            
+            if (isGolden) {
+                ctx.fillStyle = "#FFD700";
+            } else if (isDarkMode) {
+                ctx.fillStyle = "#34495E";
+            } else {
+                ctx.fillStyle = "#388E3C";
+            }
+            
             if (flip) {
                 ctx.fillRect(x - 6, y + h - 12, w + 12, 12);
             } else {
@@ -346,9 +517,13 @@ export default function FlappyBird() {
             ctx.save();
             ctx.font = "bold 36px Arial";
             ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(0,0,0,0.3)";
+            
+            // Shadow color based on mode
+            ctx.fillStyle = isDarkMode ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.3)";
             ctx.fillText(scoreRef.current, width / 2 + 2, 80 + 2);
-            ctx.fillStyle = "#fff";
+            
+            // Text color based on mode
+            ctx.fillStyle = isDarkMode ? "#E2E8F0" : "#fff";
             ctx.fillText(scoreRef.current, width / 2, 80);
             ctx.restore();
         }
@@ -404,10 +579,21 @@ export default function FlappyBird() {
             ctx.fillStyle = "rgba(255,255,255,0.95)";
             ctx.fillRect(50, 160, width - 100, 260);
             
-            ctx.fillStyle = "#EF4444";
-            ctx.font = "bold 32px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("💥 Game Over", width / 2, 210);
+            if (isGameWon) {
+                // Victory message
+                ctx.fillStyle = "#FFD700";
+                ctx.font = "bold 32px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("🏆 Congratulations!", width / 2, 210);
+                ctx.font = "20px Arial";
+                ctx.fillText("You've completed all 100 pipes!", width / 2, 245);
+            } else {
+                // Game over message
+                ctx.fillStyle = "#EF4444";
+                ctx.font = "bold 32px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("💥 Game Over", width / 2, 210);
+            }
             
             ctx.font = "bold 22px Arial";
             ctx.fillStyle = "#374151";
@@ -476,6 +662,14 @@ export default function FlappyBird() {
                         p.passed = true;
                         scoreRef.current += 1;
                         setScore(scoreRef.current);
+                        sounds.point.play().catch(() => {});
+                        
+                        // Check for game win (passed pipe 100)
+                        if (p.isGolden) {
+                            setIsGameWon(true);
+                            setState("over");
+                        }
+                        
                         if (scoreRef.current > highScore) {
                             const newHigh = scoreRef.current;
                             setHighScore(newHigh);
@@ -489,6 +683,11 @@ export default function FlappyBird() {
                 }
 
                 if (checkCollision(bird, pipesRef.current)) {
+                    if (bird.y + BIRD_RADIUS >= height - GROUND_HEIGHT) {
+                        sounds.die.play().catch(() => {});
+                    } else {
+                        sounds.hit.play().catch(() => {});
+                    }
                     setState("over");
                 }
             } else if (state === "ready") {
@@ -582,7 +781,7 @@ export default function FlappyBird() {
                         {state === "ready" ? (
                             <span className="text-green-600 animate-pulse">🎮 Ready to Fly!</span>
                         ) : state === "playing" ? (
-                            <span className="text-blue-600 animate-pulse-slow">🚁 Flying...</span>
+                            <span className="text-blue-600 animate-pulse-slow">Flying...</span>
                         ) : (
                             <span className="text-red-500 animate-bounce-slow">💥 Crashed!</span>
                         )}
