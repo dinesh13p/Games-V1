@@ -8,13 +8,18 @@ Visit the Portal page of my portfolio:
 
 **Games included:**
 - Flappy Bird
-- Doodle Jump
-- Frogger
-- Snake
-- Pong
-- Minesweeper
+- Tic-Tac-Toe
+- Snake Game
+- Tetris
 - Space Invaders
 - Pac-Man
-- Tic-Tac-Toe
+- Bagh Chal
+- Go (Gomoku style) game
+- Doodle Jump
+- Frogger Game
+- Ping Pong
+- Minesweeper
+- Archery Game
+- Brick Breaker
 
 Enjoy playing and feel free to explore or contribute!
