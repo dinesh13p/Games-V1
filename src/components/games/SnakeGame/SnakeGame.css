@@ -1,0 +1,28 @@
+.snake-game { width: 100%; color: var(--ink); }
+.snake-game .snake-stats { display: flex; gap: 2rem; margin: 0; }
+.snake-game .snake-stats dt { color: var(--muted); font: 0.7rem 'Courier New', monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+.snake-game .snake-stats dd { margin: 0.2rem 0 0; font: 1.6rem Georgia, serif; }
+.snake-game .snake-controls { display: flex; gap: 0.5rem; }
+.snake-game .snake-play-area { display: grid; grid-template-columns: minmax(0, 480px) minmax(180px, 1fr); align-items: start; gap: 2rem; }
+.snake-game .snake-board { position: relative; width: 100%; aspect-ratio: 1; border: 1px solid var(--ink); background: var(--surface); touch-action: none; overflow: hidden; }
+.snake-game .snake-board:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.snake-game .snake-board svg { display: block; width: 100%; height: 100%; }
+.snake-game .snake-body { fill: var(--olive); }
+.snake-game .snake-head { fill: var(--ink); }
+.snake-game .snake-food { fill: var(--accent); }
+.snake-game .snake-overlay { position: absolute; inset: 0; display: grid; place-content: center; pointer-events: none; }
+.snake-game .snake-overlay span { padding: 0.8rem 1.3rem; border: 1px solid var(--line); background: var(--paper); font: 1.4rem Georgia, serif; }
+.snake-game .snake-guide { padding-top: 1rem; }
+.snake-game .snake-guide-label { margin: 0 0 1rem; font: 0.7rem 'Courier New', monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.snake-game .snake-dpad { display: grid; grid-template-columns: repeat(3, minmax(44px, 64px)); grid-template-rows: repeat(2, 48px); gap: 0.3rem; margin-bottom: 1.2rem; }
+.snake-game .snake-direction { padding: 0.2rem; min-height: 44px; text-transform: capitalize; touch-action: manipulation; }
+.snake-game .snake-direction-up { grid-column: 2; grid-row: 1; }
+.snake-game .snake-direction-left { grid-column: 1; grid-row: 2; }
+.snake-game .snake-direction-down { grid-column: 2; grid-row: 2; }
+.snake-game .snake-direction-right { grid-column: 3; grid-row: 2; }
+@media (max-width: 640px) {
+    .snake-game .snake-play-area { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
+    .snake-game .snake-guide { text-align: center; }
+    .snake-game .snake-dpad { justify-content: center; }
+    .snake-game .snake-stats { gap: 1rem; }
+}

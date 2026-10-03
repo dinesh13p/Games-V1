@@ -1,0 +1,30 @@
+.bagh-game { color: var(--ink); font-family: Arial, sans-serif; }
+.bagh-game .game-toolbar label { display: grid; gap: 6px; }
+.bagh-game select { min-height: 44px; padding: 8px 28px 8px 10px; border: 1px solid var(--line); border-radius: 0; color: var(--ink); background: var(--surface); font: inherit; }
+.bagh-play-area { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr); gap: 24px; align-items: start; }
+.bagh-board-panel { padding: 24px 20px 12px 28px; border: 1px solid var(--line); background: var(--paper); overflow-x: auto; }
+.bagh-board { position: relative; width: 100%; min-width: 220px; isolation: isolate; }
+.bagh-lines { position: absolute; width: 100%; height: 100%; inset: 0; z-index: -1; pointer-events: none; }
+.bagh-lines line { stroke: var(--muted); stroke-width: 1.4; }
+.bagh-row { display: grid; grid-template-columns: repeat(5, minmax(44px, 1fr)); }
+.bagh-cell { position: relative; width: 100%; min-height: 44px; aspect-ratio: 1; padding: 8%; border: 0; border-radius: 0; background: transparent; display: grid; place-items: center; color: var(--ink); cursor: default; }
+.bagh-cell.selectable, .bagh-cell.destination { cursor: pointer; }
+.bagh-piece { display: grid; place-items: center; width: 70%; height: 70%; border: 2px solid var(--ink); border-radius: 50%; font: bold clamp(12px, 2vw, 22px)/1 'Courier New', monospace; }
+.bagh-piece.tiger { background: var(--ink); color: var(--surface); }
+.bagh-piece.goat { background: var(--surface); color: var(--ink); }
+.bagh-node { width: 8px; height: 8px; border: 1px solid var(--muted); background: var(--paper); border-radius: 50%; }
+.bagh-cell.destination .bagh-node { width: 30%; height: 30%; min-width: 13px; min-height: 13px; border: 2px dashed var(--olive); background: var(--surface); }
+.bagh-cell.selected .bagh-piece { outline: 3px solid var(--accent); outline-offset: 4px; }
+.bagh-cell.last-move:not(.selected) .bagh-piece { outline: 1px solid var(--accent); outline-offset: 4px; }
+.bagh-cell.last-origin .bagh-node { border-color: var(--accent); }
+.bagh-cell.selectable:hover .bagh-piece { border-color: var(--accent); }
+.bagh-game :focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; z-index: 2; }
+.bagh-column-label, .bagh-row-label { position: absolute; color: var(--muted); font: 12px/1 'Courier New', monospace; }
+.bagh-column-label { bottom: -12px; left: 50%; transform: translateX(-50%); }
+.bagh-row-label { left: -14px; top: 50%; transform: translateY(-50%); }
+.bagh-legend { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 32px; color: var(--muted); font: 11px/1.5 'Courier New', monospace; }
+.bagh-notes h2 { margin-top: 0; font: normal 26px/1.2 Georgia, serif; }
+.bagh-notes dd { margin: 0; }
+.bagh-notes .game-help { line-height: 1.6; }
+@media (max-width: 850px) { .bagh-play-area { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 420px) { .bagh-board-panel { padding: 16px 12px 8px 20px; } .bagh-row-label { left: -12px; } }

@@ -1,0 +1,8 @@
+.flappy-game { width: min(100%, 640px); min-width: 0; margin: 0 auto; }
+.flappy-field { position: relative; width: min(100%, 420px); margin: 0 auto; border: 1px solid var(--line); background: var(--paper); }
+.flappy-field canvas { display: block; width: 100%; height: auto; touch-action: none; cursor: pointer; }
+.flappy-field canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.flappy-overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; background: rgb(231 225 213 / 35%); }
+.flappy-overlay span { padding: 14px 20px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 25px Georgia, serif; }
+.flappy-game .flappy-flap { display: block; width: min(100%, 420px); min-height: 48px; margin: 12px auto 0; touch-action: manipulation; }
+.flappy-game .game-stats small { font: 12px 'Courier New', monospace; color: var(--muted); }

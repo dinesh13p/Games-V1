@@ -1,0 +1,8 @@
+.doodle-game { width: min(100%, 640px); min-width: 0; margin: 0 auto; }
+.doodle-field { position: relative; width: min(100%, 400px); margin: 0 auto; border: 1px solid var(--line); background: var(--paper); }
+.doodle-field canvas { display: block; width: 100%; height: auto; touch-action: none; }
+.doodle-field canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.doodle-overlay { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; background: rgb(231 225 213 / 40%); }
+.doodle-overlay span { padding: 14px 20px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 25px Georgia, serif; }
+.doodle-pad { width: min(100%, 400px); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px auto 0; }
+.doodle-pad button { min-height: 48px; touch-action: none; user-select: none; }
