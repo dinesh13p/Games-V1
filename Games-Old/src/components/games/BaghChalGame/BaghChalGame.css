@@ -1,0 +1,125 @@
+.bagh-chal-container {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100vh;
+}
+
+.bagh-chal-board {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    aspect-ratio: 1;
+    max-width: 500px;
+    margin: 0 auto;
+    background: #2d1b0e;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.bagh-chal-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.bagh-chal-cell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.bagh-chal-cell:hover::before {
+    opacity: 1;
+}
+
+.bagh-chal-cell .piece {
+    font-size: 2.5rem;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+    z-index: 1;
+}
+
+.bagh-chal-cell .piece.tiger {
+    animation: tigerPulse 2s ease-in-out infinite;
+}
+
+.bagh-chal-cell .piece.goat {
+    animation: goatFloat 3s ease-in-out infinite;
+}
+
+.bagh-chal-cell .valid-move {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(74, 222, 128, 0.5);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.bagh-chal-cell.selected {
+    background: rgba(255, 215, 0, 0.15);
+    border-radius: 8px;
+}
+
+@keyframes tigerPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes goatFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .bagh-chal-container {
+        padding: 12px;
+    }
+
+    .bagh-chal-cell .piece {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bagh-chal-cell .piece {
+        font-size: 1.4rem;
+    }
+}

@@ -1,0 +1,158 @@
+.archery-container {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100vh;
+}
+
+.archery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.archery-header h1 {
+    color: white;
+    font-size: 2rem;
+}
+
+.reset-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.archery-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    color: white;
+}
+
+.stat span:first-child {
+    display: block;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.stat span:last-child {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.archery-game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.archery-canvas {
+    width: 100%;
+    max-width: 800px;
+    height: auto;
+    aspect-ratio: 800/600;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: crosshair;
+    background: #87ceeb;
+}
+
+.archery-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-warning:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.btn-warning:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
+}
+
+@media (max-width: 768px) {
+    .archery-container {
+        padding: 12px;
+    }
+
+    .archery-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .stat {
+        padding: 8px;
+    }
+
+    .stat span:last-child {
+        font-size: 1.2rem;
+    }
+}

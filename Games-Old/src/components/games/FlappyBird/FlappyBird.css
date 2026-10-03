@@ -1,0 +1,100 @@
+.flappy-bird-container {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100vh;
+}
+
+.flappy-bird-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.flappy-bird-header h1 {
+    color: white;
+    font-size: 2rem;
+}
+
+.reset-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.flappy-bird-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.flappy-bird-stats .stat {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    color: white;
+}
+
+.flappy-bird-stats .stat span:first-child {
+    display: block;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.flappy-bird-stats .stat span:last-child {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.flappy-bird-game-area {
+    display: flex;
+    justify-content: center;
+}
+
+.flappy-bird-canvas-wrapper {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.flappy-bird-canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #87CEEB;
+}
+
+@media (max-width: 768px) {
+    .flappy-bird-container {
+        padding: 12px;
+    }
+
+    .flappy-bird-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .flappy-bird-stats .stat {
+        padding: 8px;
+    }
+
+    .flappy-bird-stats .stat span:last-child {
+        font-size: 1.2rem;
+    }
+}

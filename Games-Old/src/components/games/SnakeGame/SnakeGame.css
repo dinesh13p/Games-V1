@@ -1,0 +1,61 @@
+.snake-game-container {
+    background: linear-gradient(135deg, #0a0a1a, #1a0a2e);
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.snake-canvas {
+    border-radius: 12px;
+    background: #081226;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+}
+
+.snake-cell {
+    transition: all 0.1s ease;
+}
+
+/* Controls */
+.snake-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-width: 200px;
+    margin: 16px auto;
+}
+
+.snake-controls button {
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.snake-controls button:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.snake-controls .up {
+    grid-column: 2;
+}
+
+.snake-controls .left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.snake-controls .right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.snake-controls .down {
+    grid-column: 2;
+    grid-row: 3;
+}

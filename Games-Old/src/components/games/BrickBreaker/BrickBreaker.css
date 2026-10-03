@@ -1,0 +1,181 @@
+.brick-breaker-container {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100vh;
+}
+
+.brick-breaker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.brick-breaker-header h1 {
+    color: white;
+    font-size: 2rem;
+}
+
+.brick-breaker-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.brick-breaker-stats .stat {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    color: white;
+}
+
+.brick-breaker-stats .stat span:first-child {
+    display: block;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.brick-breaker-stats .stat span:last-child {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.brick-breaker-game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.brick-breaker-canvas {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    aspect-ratio: 600/400;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    background: #1a1a2e;
+}
+
+.brick-breaker-mobile-controls {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.brick-breaker-mobile-controls button {
+    flex: 1;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.brick-breaker-mobile-controls button:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.brick-breaker-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.reset-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-warning:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.btn-warning:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
+}
+
+@media (max-width: 768px) {
+    .brick-breaker-container {
+        padding: 12px;
+    }
+
+    .brick-breaker-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .brick-breaker-stats .stat {
+        padding: 8px;
+    }
+
+    .brick-breaker-stats .stat span:last-child {
+        font-size: 1.2rem;
+    }
+}

@@ -1,0 +1,148 @@
+.doodle-jump-container {
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100vh;
+}
+
+.doodle-jump-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.doodle-jump-header h1 {
+    color: white;
+    font-size: 2rem;
+}
+
+.score-display {
+    display: flex;
+    gap: 16px;
+    color: white;
+    font-size: 1.1rem;
+}
+
+.score-display span {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.doodle-jump-game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.doodle-jump-canvas {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    aspect-ratio: 400/600;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+}
+
+.doodle-jump-mobile-controls {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.doodle-jump-mobile-controls button {
+    flex: 1;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.doodle-jump-mobile-controls button:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.doodle-jump-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-warning:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+.btn-warning:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(248, 113, 113, 0.4);
+}
+
+@media (max-width: 768px) {
+    .doodle-jump-container {
+        padding: 12px;
+    }
+
+    .doodle-jump-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .score-display {
+        font-size: 0.9rem;
+    }
+}
