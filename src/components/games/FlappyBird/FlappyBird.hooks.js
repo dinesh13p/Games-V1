@@ -29,7 +29,7 @@ export function useFlappyBird() {
         if (!sound || muted.current) return
         sound.currentTime = 0
         sound.volume = 0.5
-        sound.play().catch(() => {})
+        sound.play().catch(() => { })
     }, [])
     const startGame = useCallback(() => {
         model.current = { ...createFlappyGame(), highScore: model.current.highScore, phase: 'playing' }
