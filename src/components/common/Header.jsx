@@ -13,7 +13,7 @@ export default function Header() {
             <span className="header-note">A small collection. A good time.</span>
             <nav aria-label="Main navigation">
                 <Link to="/#collection" aria-current={pathname === '/' ? 'page' : undefined}>The collection <span className="nav-count">{games.length}</span></Link>
-                <Link to="/#about" className="about-link">A note from Dinesh</Link>
+                <Link to="/#about" className="about-link">A note from the maker</Link>
             </nav>
             <AppearanceToggle />
         </div>
