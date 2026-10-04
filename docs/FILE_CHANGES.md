@@ -130,4 +130,4 @@ The replacement is the four-file `src/pages/Home/` page module, not a removed ga
 
 ## Preserved
 
-All original game URLs, React/Vite dependencies, `package-lock.json`, Vite configuration, lint rules, Flappy Bird audio, CNAME and original image assets remain. `package.json` adds the test command and corrects the existing manual deployment lifecycle to build before publishing, but neither publishing nor Git commands were run. `dist/` was rebuilt locally for verification and is not included in the maintained-source file counts.
+All original game URLs, React/Vite dependencies, `package-lock.json`, Vite configuration, lint rules, Flappy Bird audio and original image assets remain. `package.json` contains the local checks and build command; Cloudflare Pages deployment settings are documented in `README.md` and `wrangler.jsonc`. `dist/` is generated locally for verification and is not included in the maintained-source file counts.

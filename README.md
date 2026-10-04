@@ -87,6 +87,6 @@ Both remain desktop-only. The UI provides a flat-view toggle and automatically u
 
 Existing score keys are retained where applicable. Some games keep best scores only for the current session; there is no cloud leaderboard or cross-device match storage. Clearing browser storage clears stored scores and the last-opened game.
 
-Nothing has been pushed or deployed as part of this redesign. The existing manual `deploy` script remains available for the owner only. Its `predeploy` step builds first, and Vite copies `public/CNAME` into `dist/`. Before publishing, configure the static host to return `index.html` for deep routes because the app uses BrowserRouter.
+Cloudflare Pages is the deployment target. For a Git-connected Pages project, use the repository root, the `main` production branch, `npm run build` as the build command, and `dist` as the build output directory. `wrangler.jsonc` records the Pages output directory for reproducible Wrangler deployments. A direct upload must upload the contents of the built `dist/` directory, not the source repository. Cloudflare Pages provides the SPA fallback needed by `BrowserRouter` when no top-level `404.html` is present.
 
 See [Review notes](docs/REVIEW_NOTES.md) for completed checks and the outstanding real-device review checklist.

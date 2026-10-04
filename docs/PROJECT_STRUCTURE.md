@@ -28,8 +28,8 @@ Games-V1/
     PROJECT_STRUCTURE.md
     FILE_CHANGES.md
     REVIEW_NOTES.md
+  wrangler.jsonc                Cloudflare Pages output configuration
   public/
-    CNAME
     favicon.svg
     vite.svg                       retained original unused asset
     FlappyBird/

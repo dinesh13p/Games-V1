@@ -30,6 +30,9 @@ dist-ssr
 .env.test.local
 .env.production.local
 
+# OmniRush attachment and runtime inbox files
+.opencode/omnirush/inbox/
+
 # Build outputs
 build
 out
